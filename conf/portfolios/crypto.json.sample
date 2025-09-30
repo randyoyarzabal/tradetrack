@@ -1,0 +1,25 @@
+{
+    "NAME": "CRYPTO",
+    "HOLDINGS": {
+        "BTC-USD": [
+            "Bitcoin",
+            0.067,
+            36089
+        ],
+        "ETH-USD": [
+            "Ethereum",
+            0.8900,
+            1556.50
+        ],
+        "DOGE-USD": [
+            "Dogecoin",
+            5000,
+            0.030
+        ],
+        "LTC-USD": [
+            "Litecoin",
+            5.56,
+            150.31
+        ]
+    }
+}
