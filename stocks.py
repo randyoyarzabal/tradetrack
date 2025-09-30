@@ -910,87 +910,100 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
     else:
         args = parser.parse_args()
 
-        # Initialize portfolio library
-        pl = PortfolioLibrary()
+        # Determine if we need to load portfolios for display operations
+        needs_portfolio_loading = (
+            args.portfolio is not None or
+            args.all or
+            args.csv_file is not None or
+            args.stats or
+            args.list
+        )
 
-        # Configure portfolio library
-        pl.debug = args.debug
-        pl.day_mode = args.day
-        pl.borders = args.borders
-        pl.terminal_width = args.terminal_width
-        pl.show_totals = not args.no_totals
-        pl.include_crypto = args.crypto
+        # Only initialize and load portfolios if needed for display operations
+        if needs_portfolio_loading:
+            # Initialize portfolio library
+            pl = PortfolioLibrary()
 
-        # Auto-include crypto for specific portfolio display if portfolio contains crypto
-        if args.portfolio and not args.all:
-            pl.load_portfolio_names_only()
-            # Flatten the portfolio list (args.portfolio is a list of lists)
-            portfolio_names = [
-                name for sublist in args.portfolio for name in sublist]
-            for portfolio_name in portfolio_names:
-                if pl._portfolio_contains_crypto(portfolio_name):
-                    pl.include_crypto = True
-                    break
+            # Configure portfolio library
+            pl.debug = args.debug
+            pl.day_mode = args.day
+            pl.borders = args.borders
+            pl.terminal_width = args.terminal_width
+            pl.show_totals = not args.no_totals
+            pl.include_crypto = args.crypto
 
-        # Load portfolios
-        try:
-            pl.load_portfolios(live_data=args.live)
-        except Exception as e:
-            print(f"ERROR: Failed to load portfolios: {e}")
-            if args.debug:
-                import traceback
-                traceback.print_exc()
-            sys.exit(1)
+            # Auto-include crypto for specific portfolio display if portfolio contains crypto
+            if args.portfolio and not args.all:
+                pl.load_portfolio_names_only()
+                # Flatten the portfolio list (args.portfolio is a list of lists)
+                portfolio_names = [
+                    name for sublist in args.portfolio for name in sublist]
+                for portfolio_name in portfolio_names:
+                    if pl._portfolio_contains_crypto(portfolio_name):
+                        pl.include_crypto = True
+                        break
 
-        # Handle list portfolios
-        if args.list:
-            portfolio_names = pl.get_portfolio_names()
-            print("Available portfolios:")
-            for name in sorted(portfolio_names):
-                print(f"  - {name}")
-            print(f"\nTotal: {len(portfolio_names)} portfolios")
-            return
+            # Load portfolios
+            try:
+                pl.load_portfolios(live_data=args.live)
+            except Exception as e:
+                print(f"ERROR: Failed to load portfolios: {e}")
+                if args.debug:
+                    import traceback
+                    traceback.print_exc()
+                sys.exit(1)
 
-        # Handle different actions
-        if args.portfolio is not None:
-            # Validate portfolio names
-            available_portfolios = pl.get_portfolio_names()
-            available_portfolios.append('ALL')
+        # Handle display operations (only if portfolios were loaded)
+        if needs_portfolio_loading:
+            # Handle list portfolios
+            if args.list:
+                portfolio_names = pl.get_portfolio_names()
+                print("Available portfolios:")
+                for name in sorted(portfolio_names):
+                    print(f"  - {name}")
+                print(f"\nTotal: {len(portfolio_names)} portfolios")
+                return
 
-            for portfolio in args.portfolio:
-                if portfolio[0] not in available_portfolios:
-                    print(f"ERROR: Portfolio '{portfolio[0]}' not found.")
-                    print("Available portfolios:")
-                    for name in sorted(available_portfolios):
-                        if name != 'ALL':
-                            print(f"  - {name}")
-                    print("Use --list to see all available portfolios.")
-                    sys.exit(1)
+            # Handle different actions
+            if args.portfolio is not None:
+                # Validate portfolio names
+                available_portfolios = pl.get_portfolio_names()
+                available_portfolios.append('ALL')
 
-            # Display specific portfolios
-            for portfolio in args.portfolio:
-                if portfolio[0] == 'ALL':
-                    # For ALL, adjust terminal width if using default
-                    if args.terminal_width == config_loader.get_terminal_width():
-                        pl.terminal_width = 140
-                    pl.display_all_portfolios()
-                else:
-                    pl.display_portfolio(portfolio[0])
+                for portfolio in args.portfolio:
+                    if portfolio[0] not in available_portfolios:
+                        print(f"ERROR: Portfolio '{portfolio[0]}' not found.")
+                        print("Available portfolios:")
+                        for name in sorted(available_portfolios):
+                            if name != 'ALL':
+                                print(f"  - {name}")
+                        print("Use --list to see all available portfolios.")
+                        sys.exit(1)
 
-        elif args.all:
-            # Display all portfolios
-            pl.display_all_portfolios()
+                # Display specific portfolios
+                for portfolio in args.portfolio:
+                    if portfolio[0] == 'ALL':
+                        # For ALL, adjust terminal width if using default
+                        if args.terminal_width == config_loader.get_terminal_width():
+                            pl.terminal_width = 140
+                        pl.display_all_portfolios()
+                    else:
+                        pl.display_portfolio(portfolio[0])
 
-        elif args.csv_file is not None:
-            # Export to CSV
-            pl.export_to_csv(args.csv_file[0])
+            elif args.all:
+                # Display all portfolios
+                pl.display_all_portfolios()
 
-        elif args.stats:
-            # Display statistics
-            pl.display_statistics()
+            elif args.csv_file is not None:
+                # Export to CSV
+                pl.export_to_csv(args.csv_file[0])
+
+            elif args.stats:
+                # Display statistics
+                pl.display_statistics()
 
         # Handle CRUD operations
-        elif args.add_lot is not None:
+        if args.add_lot is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1026,7 +1039,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
                 portfolio, symbol, shares, cost_basis, date, manual_price)
             sys.exit(0 if success else 1)
 
-        elif args.remove_lot is not None:
+        if args.remove_lot is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1041,7 +1054,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.remove_lot(portfolio, symbol, lot_index)
             sys.exit(0 if success else 1)
 
-        elif args.add_symbol is not None:
+        if args.add_symbol is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1049,7 +1062,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.add_symbol(portfolio, symbol, description)
             sys.exit(0 if success else 1)
 
-        elif args.remove_symbol is not None:
+        if args.remove_symbol is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1057,7 +1070,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.remove_symbol(portfolio, symbol)
             sys.exit(0 if success else 1)
 
-        elif args.create_portfolio is not None:
+        if args.create_portfolio is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1065,7 +1078,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.create_portfolio(portfolio, description)
             sys.exit(0 if success else 1)
 
-        elif args.delete_portfolio is not None:
+        if args.delete_portfolio is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1073,7 +1086,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.delete_portfolio(portfolio)
             sys.exit(0 if success else 1)
 
-        elif args.backup_portfolio is not None:
+        if args.backup_portfolio is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1081,7 +1094,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.backup_portfolio(portfolio)
             sys.exit(0 if success else 1)
 
-        elif args.restore_portfolio is not None:
+        if args.restore_portfolio is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1089,7 +1102,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             success = crud.restore_portfolio(backup_file, portfolio)
             sys.exit(0 if success else 1)
 
-        elif args.list_lots is not None:
+        if args.list_lots is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1097,7 +1110,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             crud.list_lots(portfolio, symbol)
             sys.exit(0)
 
-        elif args.tax_analysis is not None:
+        if args.tax_analysis is not None:
             # Initialize CRUD operations
             crud = PortfolioCRUD()
 
@@ -1107,7 +1120,22 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             crud.get_tax_analysis(portfolio, symbol)
             sys.exit(0)
 
-        else:
+        # Check if any action was specified
+        action_specified = (
+            needs_portfolio_loading or
+            args.add_lot is not None or
+            args.remove_lot is not None or
+            args.add_symbol is not None or
+            args.remove_symbol is not None or
+            args.create_portfolio is not None or
+            args.delete_portfolio is not None or
+            args.backup_portfolio is not None or
+            args.restore_portfolio is not None or
+            args.list_lots is not None or
+            args.tax_analysis is not None
+        )
+
+        if not action_specified:
             # No action specified, show help
             parser.print_help()
 

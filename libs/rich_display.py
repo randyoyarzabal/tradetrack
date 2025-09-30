@@ -271,8 +271,9 @@ class RichDisplay:
 
                     # Special handling for VALUE column - color based on Gain$
                     # Ensure we have Gain$ column
-                    if header == 'Value' and len(row) > 7:
-                        gain_dollars = row[7]  # Gain$ is typically at index 7
+                    if header == 'Value' and len(row) > 8:
+                        # Gain$ is now at index 8 (after adding Portfolio column)
+                        gain_dollars = row[8]
                         formatted_cell = self._format_value_with_gain_color(
                             cell, gain_dollars)
                     else:
@@ -282,8 +283,9 @@ class RichDisplay:
                     # Plain text for non-numeric cells
                     formatted_cell = str(cell) if cell is not None else ""
 
-                    # Colorize symbols (first column) in cyan to match rich display
-                    if i == 0 and cell:  # First column is typically Symbol
+                    # Colorize symbols (second column) in cyan to match rich display
+                    # Symbol is now at index 1 (Portfolio is at index 0)
+                    if i == 1 and cell:
                         from termcolor import colored
                         formatted_cell = colored(
                             str(cell), 'cyan', force_color=True)

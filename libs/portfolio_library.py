@@ -521,6 +521,7 @@ class PortfolioLibrary:
 
         for _, row in df.iterrows():
             display_row = [
+                row['Portfolio'],
                 row['Symbol'],
                 row['Description'],
                 row['Qty'],
@@ -540,14 +541,15 @@ class PortfolioLibrary:
         """Create a totals row for display."""
         totals = df.sum()
 
-        # Create totals row matching display data format (9 columns, no Portfolio)
+        # Create totals row matching display data format (10 columns including Portfolio)
         return [
+            '',  # Portfolio
             '',  # Symbol
             '',  # Description
             '',  # Qty
             '',  # Ave$/Day$
+            '',  # Price
             '',  # Gain%
-            'TOTAL',
             totals['Cost'],  # Pass raw value for Rich coloring
             totals['Gain$'],
             totals['Value']
