@@ -211,15 +211,24 @@ class PortfolioLibrary:
                     # Use the most recent manual price
                     current_price = manual_prices[-1]
 
-            # Calculate gains
-            total_value = total_shares * current_price
-            gain_dollars = total_value - total_cost
-            gain_percent = (gain_dollars / total_cost *
-                            100) if total_cost > 0 else 0
-
-            # Determine cost label
+            # Determine cost label and cost basis for calculations
             cost_label = 'Day$' if self.day_mode else 'Ave$'
             cost_value = quote['open_price'] if self.day_mode else average_cost
+
+            # Calculate gains based on the appropriate cost basis
+            if self.day_mode:
+                # For daily mode, calculate gains based on opening price
+                daily_cost = total_shares * quote['open_price']
+                total_value = total_shares * current_price
+                gain_dollars = total_value - daily_cost
+                gain_percent = (gain_dollars / daily_cost *
+                                100) if daily_cost > 0 else 0
+            else:
+                # For average mode, calculate gains based on average cost
+                total_value = total_shares * current_price
+                gain_dollars = total_value - total_cost
+                gain_percent = (gain_dollars / total_cost *
+                                100) if total_cost > 0 else 0
 
             # Format quantities - add asterisk for fractional, remove decimals
             if total_shares.is_integer():
@@ -319,6 +328,10 @@ class PortfolioLibrary:
             totals_row = self._create_totals_row(portfolio_data)
             display_data.append(totals_row)
 
+        # Generate portfolio title with average gain percentage
+        portfolio_title = self._generate_portfolio_title(
+            portfolio_name, portfolio_data)
+
         # Display the table using appropriate method
         if self.borders:
             # Use Rich table with borders
@@ -327,14 +340,15 @@ class PortfolioLibrary:
                 headers=self.headers[1:],  # Remove Portfolio column
                 data=display_data,
                 bordered=True,
-                width=self.terminal_width
+                width=self.terminal_width,
+                title=portfolio_title
             )
         else:
             # Use columnar table without borders
             self.rich_display.display_columnar_table(
                 headers=self.headers[1:],  # Remove Portfolio column
                 data=display_data,
-                title=f"Portfolio: {portfolio_name}",
+                title=portfolio_title,
                 width=self.terminal_width
             )
 
@@ -573,6 +587,38 @@ class PortfolioLibrary:
 
         return False
 
+    def _generate_portfolio_title(self, portfolio_name: str, portfolio_data: pd.DataFrame) -> str:
+        """Generate portfolio title with average gain percentage and color coding."""
+        if portfolio_data.empty:
+            return f"Portfolio: {portfolio_name}"
+
+        # Use existing statistics from pandas dataset
+        if hasattr(self, 'stats') and 'totals' in self.stats:
+            total_gain_percent = self.stats['totals']['Gain%']
+            total_gain_dollars = self.stats['totals']['Gain$']
+        else:
+            # Fallback to manual calculation if stats not available
+            total_cost = portfolio_data['Cost'].sum()
+            total_gain_dollars = portfolio_data['Gain$'].sum()
+            total_gain_percent = (total_gain_dollars /
+                                  total_cost * 100) if total_cost > 0 else 0
+
+        # Format the gain percentage
+        gain_percent_str = f"{total_gain_percent:+.1f}%"
+
+        # Create colored title based on gain/loss
+        from termcolor import colored
+        if total_gain_dollars > 0:
+            colored_gain = colored(gain_percent_str, 'green', force_color=True)
+        elif total_gain_dollars < 0:
+            colored_gain = colored(gain_percent_str, 'red', force_color=True)
+        else:
+            colored_gain = gain_percent_str
+
+        # Add mode indicator to title
+        mode_indicator = "Daily" if self.day_mode else "All-Time"
+        return f"Portfolio: {portfolio_name} ({mode_indicator} {colored_gain})"
+
     def _show_cache_status_message(self):
         """Show cache status message at the bottom of display."""
         if self._show_cache_message:
@@ -582,5 +628,5 @@ class PortfolioLibrary:
 
         # Add notes about manual_price and fractional quantities
         print(
-            "Note: Use manual_price in --add-lot to suppress warnings for delisted symbols.")
-        print("Note: * indicates fractional quantities (e.g., crypto or ETF shares).")
+            "- Use manual_price in --add-lot to suppress warnings for delisted symbols.")
+        print("- * indicates fractional quantities (e.g., crypto or ETF shares).")
