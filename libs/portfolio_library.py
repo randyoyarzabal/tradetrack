@@ -345,10 +345,12 @@ class PortfolioLibrary:
         # Convert to display format
         display_data = self._format_display_data(sorted_portfolio_data)
 
-        # Add totals row if enabled
+        # Prepare footer data if totals are enabled
+        footer_data = None
         if self.show_totals:
-            totals_row = self._create_totals_row(sorted_portfolio_data)
-            display_data.append(totals_row)
+            footer_data = self._create_footer_data(sorted_portfolio_data)
+            # Remove Portfolio column from footer data for single portfolio display
+            footer_data = footer_data[1:] if footer_data else None
 
         # Generate portfolio title with average gain percentage
         portfolio_title = self._generate_portfolio_title(
@@ -356,30 +358,40 @@ class PortfolioLibrary:
 
         # Display the table using appropriate method
         if self.borders:
-            # Use Rich table with borders
+            # Use Rich table with borders and footer
             # Remove Portfolio column from both headers and data for single portfolio display
-            headers_without_portfolio = self.headers[1:]  # Remove Portfolio column
-            data_without_portfolio = [row[1:] for row in display_data]  # Remove Portfolio column from each row
-            
+            # Remove Portfolio column
+            headers_without_portfolio = self.headers[1:]
+            # Remove Portfolio column from each row
+            data_without_portfolio = [row[1:] for row in display_data]
+
             self.rich_display.display_portfolio_table(
                 portfolio_name=portfolio_name,
                 headers=headers_without_portfolio,
                 data=data_without_portfolio,
                 bordered=True,
-                width=self.terminal_width,
-                title=portfolio_title
+                title=portfolio_title,
+                footer_data=footer_data
             )
         else:
             # Use columnar table without borders
             # Remove Portfolio column from both headers and data for single portfolio display
-            headers_without_portfolio = self.headers[1:]  # Remove Portfolio column
-            data_without_portfolio = [row[1:] for row in display_data]  # Remove Portfolio column from each row
-            
+            # Remove Portfolio column
+            headers_without_portfolio = self.headers[1:]
+            # Remove Portfolio column from each row
+            data_without_portfolio = [row[1:] for row in display_data]
+
+            # Add totals row for columnar display if enabled
+            if self.show_totals:
+                totals_row = self._create_totals_row(sorted_portfolio_data)
+                # Remove Portfolio column from totals row
+                totals_row_without_portfolio = totals_row[1:]
+                data_without_portfolio.append(totals_row_without_portfolio)
+
             self.rich_display.display_columnar_table(
                 headers=headers_without_portfolio,
                 data=data_without_portfolio,
-                title=portfolio_title,
-                width=self.terminal_width
+                title=portfolio_title
             )
 
         # Show cache message if applicable
@@ -397,28 +409,31 @@ class PortfolioLibrary:
         # Convert to display format
         display_data = self._format_display_data(sorted_data)
 
-        # Add totals row if enabled
+        # Prepare footer data if totals are enabled
+        footer_data = None
         if self.show_totals:
-            totals_row = self._create_totals_row(self.df)
-            display_data.append(totals_row)
+            footer_data = self._create_footer_data(self.df)
 
         # Display the table using appropriate method
         if self.borders:
-            # Use Rich table with borders
+            # Use Rich table with borders and footer
             self.rich_display.display_table(
                 headers=self.headers,
                 data=display_data,
                 bordered=True,
                 title="All Portfolios",
-                width=self.terminal_width
+                footer_data=footer_data
             )
         else:
-            # Use columnar table without borders
+            # Use columnar table without borders (still use totals row for columnar)
+            if self.show_totals:
+                totals_row = self._create_totals_row(self.df)
+                display_data.append(totals_row)
+
             self.rich_display.display_columnar_table(
                 headers=self.headers,
                 data=display_data,
-                title="All Portfolios",
-                width=self.terminal_width
+                title="All Portfolios"
             )
 
         # Show cache message if applicable
@@ -583,6 +598,27 @@ class PortfolioLibrary:
             totals['Cost'],  # Pass raw value for Rich coloring
             totals['Gain$'],
             totals['Value']
+        ]
+
+    def _create_footer_data(self, df: pd.DataFrame) -> List[str]:
+        """Create footer data for Rich table display."""
+        totals = df.sum()
+
+        # Format footer data for each column
+        return [
+            '',  # Portfolio
+            '',  # Symbol
+            '',  # Description
+            '',  # Qty
+            '',  # Ave$/Day$
+            '',  # Price
+            '',  # Gain%
+            self.currency_formatter.format_currency(
+                totals.get('Cost', 0), rich_mode=True),
+            self.currency_formatter.format_currency(
+                totals.get('Gain$', 0), rich_mode=True),
+            self.currency_formatter.format_currency(
+                totals.get('Value', 0), rich_mode=True)
         ]
 
     def export_to_csv(self, filename: str):

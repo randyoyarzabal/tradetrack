@@ -16,7 +16,7 @@ display:
   show_totals: true               # Show totals row by default
   include_crypto: false           # Include crypto by default
   max_description_length: 28      # Maximum characters for company descriptions
-  stretch_to_terminal: true       # Stretch tables to full terminal width (true) or respect terminal_width (false)
+  stretch_to_terminal: false       # Stretch tables to full terminal width (true) or respect terminal_width (false)
   
   # Sorting Configuration
   default_sort_column: "symbol"   # Default column to sort by

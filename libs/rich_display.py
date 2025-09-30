@@ -29,7 +29,8 @@ class RichDisplay:
         headers: List[str],
         data: List[List[Any]],
         bordered: bool = False,
-        title: Optional[str] = None
+        title: Optional[str] = None,
+        footer_data: Optional[List[str]] = None
     ) -> Table:
         """
         Create a Rich table with the specified configuration.
@@ -39,14 +40,18 @@ class RichDisplay:
             data: List of rows, each row is a list of values
             bordered: Whether to show borders
             title: Optional table title
+            footer_data: Optional list of footer values for each column
 
         Returns:
             Rich Table object
         """
-        # Create table
-        table = Table(title=title, show_header=True,
+        # Create table with footer support
+        show_footer = footer_data is not None
+        # Only expand table if we should stretch to terminal width
+        should_expand = self.config_loader.should_stretch_to_terminal()
+        table = Table(title=title, show_header=True, show_footer=show_footer,
                       header_style=self.table_config['header_style'],
-                      expand=True)
+                      expand=should_expand)
 
         # Configure borders
         if bordered:
@@ -62,8 +67,8 @@ class RichDisplay:
         else:
             table.box = box.MINIMAL
 
-        # Add columns with colored headers
-        for header in headers:
+        # Add columns with colored headers and footers
+        for i, header in enumerate(headers):
             # Determine alignment based on content type
             justify = self._get_column_alignment(header, data)
 
@@ -83,7 +88,12 @@ class RichDisplay:
             else:
                 header_text = Text(header, style="bold white")
 
-            table.add_column(header_text, justify=justify)
+            # Add footer if provided
+            footer_text = None
+            if footer_data and i < len(footer_data):
+                footer_text = Text(footer_data[i], style="bold bright_white")
+
+            table.add_column(header_text, justify=justify, footer=footer_text)
 
         # Add rows
         for row in data:
@@ -310,7 +320,8 @@ class RichDisplay:
             formatted_data,
             headers=headers,
             no_borders=True,
-            terminal_width=terminal_width
+            terminal_width=terminal_width,
+            wrap_max=1  # Prevent text wrapping
         )
         # Strip trailing spaces from each line
         lines = table.split('\n')
@@ -422,7 +433,8 @@ class RichDisplay:
         data: List[List[Any]],
         bordered: bool = False,
         title: Optional[str] = None,
-        width: Optional[int] = None
+        width: Optional[int] = None,
+        footer_data: Optional[List[str]] = None
     ):
         """
         Display a table using Rich.
@@ -433,8 +445,9 @@ class RichDisplay:
             bordered: Whether to show borders
             title: Optional table title
             width: Terminal width override
+            footer_data: Optional list of footer values for each column
         """
-        table = self.create_table(headers, data, bordered, title)
+        table = self.create_table(headers, data, bordered, title, footer_data)
 
         # Determine console width based on stretch setting
         if width:
@@ -458,7 +471,8 @@ class RichDisplay:
         bordered: bool = False,
         show_totals: bool = True,
         width: Optional[int] = None,
-        title: Optional[str] = None
+        title: Optional[str] = None,
+        footer_data: Optional[List[str]] = None
     ):
         """
         Display a portfolio table with proper formatting.
@@ -471,13 +485,14 @@ class RichDisplay:
             show_totals: Whether to show totals row
             width: Terminal width override
             title: Optional custom title (if not provided, uses default)
+            footer_data: Optional list of footer values for each column
         """
         # Use provided title or create default
         if title is None:
             title = f"Portfolio: {portfolio_name}"
 
         # Display the table
-        self.display_table(headers, data, bordered, title, width)
+        self.display_table(headers, data, bordered, title, width, footer_data)
 
     def display_stats_table(
         self,

@@ -781,6 +781,15 @@ class PortfolioCRUD:
             print(f"Error in tax analysis: {e}")
 
 
+def _display_all_portfolios(pl, args, config_loader):
+    """Helper function to display all portfolios with consistent settings."""
+    # Only override terminal width if explicitly provided via command line
+    # Otherwise, respect the config setting
+    if args.terminal_width != config_loader.get_terminal_width():
+        pl.terminal_width = args.terminal_width
+    pl.display_all_portfolios()
+
+
 def main():
     """Main entry point for the TradeTrack application."""
     # Get configuration
@@ -989,31 +998,24 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             if args.portfolio is not None:
                 # Validate portfolio names
                 available_portfolios = pl.get_portfolio_names()
-                available_portfolios.append('ALL')
 
                 for portfolio in args.portfolio:
                     if portfolio[0] not in available_portfolios:
                         print(f"ERROR: Portfolio '{portfolio[0]}' not found.")
                         print("Available portfolios:")
                         for name in sorted(available_portfolios):
-                            if name != 'ALL':
-                                print(f"  - {name}")
+                            print(f"  - {name}")
                         print("Use --list to see all available portfolios.")
+                        print("Use --all to display all portfolios combined.")
                         sys.exit(1)
 
                 # Display specific portfolios
                 for portfolio in args.portfolio:
-                    if portfolio[0] == 'ALL':
-                        # For ALL, adjust terminal width if using default
-                        if args.terminal_width == config_loader.get_terminal_width():
-                            pl.terminal_width = 140
-                        pl.display_all_portfolios()
-                    else:
-                        pl.display_portfolio(portfolio[0])
+                    pl.display_portfolio(portfolio[0])
 
             elif args.all:
                 # Display all portfolios
-                pl.display_all_portfolios()
+                _display_all_portfolios(pl, args, config_loader)
 
             elif args.csv_file is not None:
                 # Export to CSV
