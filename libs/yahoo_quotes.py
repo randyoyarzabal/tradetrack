@@ -50,7 +50,8 @@ class YahooQuotes:
                     self.cache_timestamps.update(
                         cache_data.get('timestamps', {}))
                     if self.config_loader.should_show_cache_status():
-                        print(f"DEBUG: Loaded cache from file - {len(self.cache)} entries")
+                        print(
+                            f"DEBUG: Loaded cache from file - {len(self.cache)} entries")
             else:
                 if self.config_loader.should_show_cache_status():
                     print(f"DEBUG: Cache file does not exist: {CACHE_FILE}")
@@ -72,7 +73,8 @@ class YahooQuotes:
             with open(CACHE_FILE, 'w') as f:
                 json.dump(cache_data, f, indent=2, sort_keys=True)
                 if self.config_loader.should_show_cache_status():
-                    print(f"DEBUG: Saved cache to file - {len(self.cache)} entries")
+                    print(
+                        f"DEBUG: Saved cache to file - {len(self.cache)} entries")
         except Exception as e:
             if self.config_loader.should_show_cache_status():
                 print(f"DEBUG: Failed to save cache to file: {e}")
@@ -220,8 +222,14 @@ class YahooQuotes:
         Returns:
             True if symbol is crypto, False otherwise
         """
+        # Check against configured crypto symbols
         crypto_symbols = self.config_loader.get_crypto_symbols()
-        return symbol.upper() in [s.upper() for s in crypto_symbols]
+        if symbol.upper() in [s.upper() for s in crypto_symbols]:
+            return True
+
+        # Check for common crypto patterns (e.g., BTC-USD, ETH-USD, etc.)
+        crypto_patterns = ['-USD', '-BTC', '-ETH', '-USDT', '-USDC']
+        return any(symbol.upper().endswith(pattern) for pattern in crypto_patterns)
 
     def get_market_movers(self, index: str = "SPY", direction: str = "up") -> List[Dict[str, Any]]:
         """

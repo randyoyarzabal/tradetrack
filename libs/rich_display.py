@@ -164,13 +164,31 @@ class RichDisplay:
         Returns:
             Rich Text object with appropriate colors
         """
-        # Format the value as plain text first
+        # Only apply gain/loss coloring to specific columns
+        is_gain_loss_column = column_type in ['Gain$', 'Gain%', 'Value']
+
+        # For Rich display, use colored_mode from config
+        # If colored_mode is false, use parentheses for negative values
+        # If colored_mode is true, drop negative sign and use color
+        currency_config = self.config_loader.get_currency_config()
+        use_colors = currency_config['colored_mode'] and is_gain_loss_column
+        drop_negative_sign = use_colors  # Only drop negative sign when using colors
+
+        # Format the value using currency formatter
         if 'Gain%' in column_type or '%' in column_type:
             formatted_text = self.currency_formatter.format_percentage(
-                value, rich_mode=True)
+                value,
+                rich_mode=True,
+                colored_mode=False,  # Rich handles its own coloring
+                drop_negative_sign=drop_negative_sign
+            )
         elif column_type in ['Cost', 'Gain$', 'Value', 'Ave$', 'Day$', 'Price']:
             formatted_text = self.currency_formatter.format_currency(
-                value, rich_mode=True)
+                value,
+                rich_mode=True,
+                colored_mode=False,  # Rich handles its own coloring
+                drop_negative_sign=drop_negative_sign
+            )
         else:
             formatted_text = self.currency_formatter.format_number(
                 value, rich_mode=True)
@@ -178,11 +196,16 @@ class RichDisplay:
         # Create Rich Text with colors
         text = Text(formatted_text)
 
-        # Apply colors based on value
-        if value < 0:
-            text.stylize("red")
-        elif value > 0 and column_type in ['Gain$', 'Gain%', 'Value']:
-            text.stylize("green")
+        # Apply colors based on value and column type
+        if use_colors:
+            # Use Rich colors when colored_mode is enabled
+            if value < 0:
+                text.stylize("red")
+            elif value > 0 and is_gain_loss_column:
+                text.stylize("green")
+        else:
+            # No colors when colored_mode is disabled
+            pass
 
         return text
 
@@ -252,11 +275,31 @@ class RichDisplay:
         Returns:
             Formatted string with termcolor
         """
-        # Format the value using currency formatter with termcolor
+        # Only apply gain/loss coloring to specific columns
+        is_gain_loss_column = column_type in ['Gain$', 'Gain%', 'Value']
+
+        # For columnar display, use colored_mode from config
+        # If colored_mode is false, use parentheses for negative values
+        # If colored_mode is true, drop negative sign and use color
+        currency_config = self.config_loader.get_currency_config()
+        use_colors = currency_config['colored_mode'] and is_gain_loss_column
+        drop_negative_sign = use_colors  # Only drop negative sign when using colors
+
+        # Format the value using currency formatter
         if 'Gain%' in column_type or '%' in column_type:
-            return self.currency_formatter.format_percentage(value, rich_mode=False)
+            return self.currency_formatter.format_percentage(
+                value,
+                rich_mode=False,
+                colored_mode=use_colors,
+                drop_negative_sign=drop_negative_sign
+            )
         elif column_type in ['Cost', 'Gain$', 'Value', 'Ave$', 'Day$', 'Price']:
-            return self.currency_formatter.format_currency(value, rich_mode=False)
+            return self.currency_formatter.format_currency(
+                value,
+                rich_mode=False,
+                colored_mode=use_colors,
+                drop_negative_sign=drop_negative_sign
+            )
         else:
             return self.currency_formatter.format_number(value, rich_mode=False)
 

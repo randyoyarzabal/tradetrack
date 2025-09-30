@@ -109,6 +109,17 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
         pl.include_crypto = args.crypto
         pl.include_unvested = args.unvested
 
+        # Auto-include crypto for specific portfolio display if portfolio contains crypto
+        if args.portfolio and not args.all:
+            pl.load_portfolio_names_only()
+            # Flatten the portfolio list (args.portfolio is a list of lists)
+            portfolio_names = [
+                name for sublist in args.portfolio for name in sublist]
+            for portfolio_name in portfolio_names:
+                if pl._portfolio_contains_crypto(portfolio_name):
+                    pl.include_crypto = True
+                    break
+
         # Load portfolios
         try:
             pl.load_portfolios(live_data=args.live)

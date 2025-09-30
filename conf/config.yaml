@@ -11,8 +11,8 @@ paths:
 
 # Display Configuration
 display:
-  terminal_width: 120              # Default terminal width
-  borders: false                   # Default border setting for tables
+  terminal_width: 120             # Default terminal width
+  borders: false                  # Default border setting for tables
   show_totals: true               # Show totals row by default
   include_crypto: false           # Include crypto by default
   include_unvested: false         # Include unvested stocks by default

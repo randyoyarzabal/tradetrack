@@ -160,10 +160,23 @@ class PortfolioLibrary:
         rows = []
 
         for symbol, stock_data in stocks.items():
+            # Check if we have quote data, if not, try to use manual prices
             if symbol not in self.quotes:
-                continue
+                # Try to use manual price as fallback
+                manual_prices = [lot.get(
+                    'manual_price') for lot in stock_data['lots'] if lot.get('manual_price')]
+                if not manual_prices:
+                    continue  # Skip if no manual price available
 
-            quote = self.quotes[symbol]
+                # Create a mock quote with manual price
+                quote = {
+                    'description': stock_data.get('description', symbol),
+                    # Use most recent manual price
+                    'current_price': manual_prices[-1]
+                }
+            else:
+                quote = self.quotes[symbol]
+
             portfolio = stock_data['portfolio']
             # Use Yahoo description instead of portfolio description, truncate if too long
             description = quote.get('description', symbol)
@@ -180,8 +193,8 @@ class PortfolioLibrary:
             # Get current price
             current_price = quote['current_price']
 
-            # Use manual price if available and current price is 0
-            if current_price == 0 and stock_data['lots']:
+            # Use manual price if available and current price is 0 or very small
+            if current_price <= 0 and stock_data['lots']:
                 manual_prices = [lot.get(
                     'manual_price') for lot in stock_data['lots'] if lot.get('manual_price')]
                 if manual_prices:
@@ -513,6 +526,27 @@ class PortfolioLibrary:
         else:
             print("No data available to export")
 
+    def load_portfolio_names_only(self):
+        """Load only portfolio names without fetching quotes."""
+        self.portfolios = self.portfolio_loader.load_portfolios()
+        self.all_stocks = self.portfolio_loader.get_all_stocks()
+
     def get_portfolio_names(self) -> List[str]:
         """Get list of portfolio names."""
         return self.portfolio_loader.get_portfolio_names()
+
+    def _portfolio_contains_crypto(self, portfolio_name: str) -> bool:
+        """Check if a portfolio contains crypto symbols."""
+        if portfolio_name not in self.portfolios:
+            return False
+
+        portfolio = self.portfolios[portfolio_name]
+        if 'stocks' not in portfolio:
+            return False
+
+        # Check if any symbol in the portfolio is crypto
+        for symbol in portfolio['stocks'].keys():
+            if self.yahoo_quotes.is_crypto(symbol):
+                return True
+
+        return False
