@@ -52,17 +52,38 @@ class PortfolioLibrary:
 
         # Get quotes for all symbols
         symbols = list(filtered_stocks.keys())
-        
+
+        # Reinitialize YahooQuotes based on live_data flag
+        if live_data:
+            # For live data, clear global cache and don't load from file
+            from .yahoo_quotes import _global_cache, _global_cache_timestamps
+            _global_cache.clear()
+            _global_cache_timestamps.clear()
+            from .yahoo_quotes import YahooQuotes
+            self.yahoo_quotes = YahooQuotes(load_from_file=False)
+            # print("DEBUG: Live data requested - cleared cache and not loading from file")
+        else:
+            # For cached data, load from file
+            from .yahoo_quotes import YahooQuotes
+            self.yahoo_quotes = YahooQuotes(load_from_file=True)
+
         # Check if we have valid cached data
         if not live_data and self._has_valid_cache(symbols):
             print("Using cached data. Use --live to force fresh data fetch.")
             self.quotes = self._get_cached_quotes(symbols)
         else:
+            # Determine the reason for live fetch
             if live_data:
-                print("Fetching live data...")
+                reason = "live data requested"
             else:
-                print("No valid cache found, fetching live data...")
-            self.quotes = self.yahoo_quotes.get_quotes(symbols)
+                reason = "cache expired"
+
+            # Debug: Show cache status (can be removed in production)
+            # print(f"DEBUG: Cache check - Cache size: {len(self.yahoo_quotes.cache)}, Symbols: {len(symbols)}")
+            # print(f"DEBUG: Cache keys: {list(self.yahoo_quotes.cache.keys())[:5]}...")  # Show first 5 keys
+
+            # Show progress spinner for live data fetch
+            self._fetch_quotes_with_spinner(symbols, reason)
 
         # Process data into pandas DataFrame
         self._process_data(filtered_stocks)
@@ -72,10 +93,14 @@ class PortfolioLibrary:
 
     def _has_valid_cache(self, symbols: List[str]) -> bool:
         """Check if we have valid cached data for all symbols."""
+        if not symbols:
+            return False
+
         for symbol in symbols:
-            if not self.yahoo_quotes._is_cache_valid(symbol):
+            if symbol not in self.yahoo_quotes.cache or not self.yahoo_quotes._is_cache_valid(symbol):
                 return False
-        return len(symbols) > 0
+
+        return True
 
     def _get_cached_quotes(self, symbols: List[str]) -> Dict[str, Dict[str, Any]]:
         """Get cached quotes for symbols."""
@@ -84,6 +109,34 @@ class PortfolioLibrary:
             if symbol in self.yahoo_quotes.cache:
                 quotes[symbol] = self.yahoo_quotes.cache[symbol]
         return quotes
+
+    def _fetch_quotes_with_spinner(self, symbols: List[str], reason: str):
+        """Fetch quotes with a progress spinner."""
+        from rich.console import Console
+        from rich.spinner import Spinner
+        from rich.text import Text
+        import time
+        import io
+        from contextlib import redirect_stderr, redirect_stdout
+
+        console = Console()
+
+        # Create message based on reason
+        if reason == "live data requested":
+            message = "Fetching live data"
+        elif reason == "cache expired":
+            message = "Cache expired, fetching fresh data"
+        else:
+            message = "Loading data"
+
+        # Try a different spinner style
+        spinner_style = "arc"
+
+        # Create spinner
+        with console.status(Spinner(spinner_style, Text(message, style="cyan")), spinner_style="cyan") as status:
+            # Suppress all output during fetch
+            with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+                self.quotes = self.yahoo_quotes.get_quotes(symbols)
 
     def _filter_stocks(self) -> Dict[str, Dict[str, Any]]:
         """Filter stocks based on current settings."""
@@ -112,7 +165,11 @@ class PortfolioLibrary:
 
             quote = self.quotes[symbol]
             portfolio = stock_data['portfolio']
-            description = stock_data['description']
+            # Use Yahoo description instead of portfolio description, truncate if too long
+            description = quote.get('description', symbol)
+            max_length = self.config_loader.get_max_description_length()
+            if len(description) > max_length:
+                description = description[:max_length-3] + "..."
 
             # Calculate totals across all lots
             total_shares = sum(lot['shares'] for lot in stock_data['lots'])

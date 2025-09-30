@@ -16,6 +16,8 @@ display:
   show_totals: true               # Show totals row by default
   include_crypto: false           # Include crypto by default
   include_unvested: false         # Include unvested stocks by default
+  max_description_length: 28      # Maximum characters for company descriptions
+  stretch_to_terminal: true       # Stretch tables to full terminal width (true) or respect terminal_width (false)
 
 # Currency Formatting
 currency:
@@ -37,6 +39,12 @@ api:
     timeout: 30                   # Request timeout in seconds
     retries: 3                    # Number of retries on failure
     cache_duration: 3600          # Cache duration in seconds (1 hour)
+
+# Debug Configuration
+debug:
+  enabled: false                  # Enable debug output
+  show_cache_status: false        # Show cache loading/saving messages
+  show_spinner_debug: false       # Show spinner debug messages
   
 
 # Portfolio Configuration

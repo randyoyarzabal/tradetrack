@@ -45,7 +45,8 @@ class RichDisplay:
         """
         # Create table
         table = Table(title=title, show_header=True,
-                      header_style=self.table_config['header_style'])
+                      header_style=self.table_config['header_style'],
+                      expand=True)
 
         # Configure borders
         if bordered:
@@ -61,25 +62,53 @@ class RichDisplay:
         else:
             table.box = box.MINIMAL
 
-        # Add columns
+        # Add columns with colored headers
         for header in headers:
             # Determine alignment based on content type
             justify = self._get_column_alignment(header, data)
-            table.add_column(header, justify=justify)
+
+            # Color the headers
+            if header.upper() in ['SYMBOL', 'TICKER']:
+                header_text = Text(header, style="bold bright_cyan")
+            elif header.upper() in ['PORTFOLIO', 'NAME']:
+                header_text = Text(header, style="bold bright_magenta")
+            elif header.upper() in ['DESCRIPTION', 'DESC']:
+                header_text = Text(header, style="bold bright_blue")
+            elif header.upper() in ['QTY', 'QUANTITY', 'SHARES']:
+                header_text = Text(header, style="bold bright_yellow")
+            elif header.upper() in ['PRICE', 'COST', 'VALUE', 'GAIN$', 'AVE$', 'DAY$']:
+                header_text = Text(header, style="bold bright_green")
+            elif header.upper() in ['GAIN%', 'PERCENTAGE']:
+                header_text = Text(header, style="bold bright_red")
+            else:
+                header_text = Text(header, style="bold white")
+
+            table.add_column(header_text, justify=justify)
 
         # Add rows
         for row in data:
             # Convert row data to Rich Text objects for proper coloring
             formatted_row = []
             for i, cell in enumerate(row):
+                header = headers[i] if i < len(headers) else ""
+
                 if isinstance(cell, (int, float)):
                     # Use Rich colors for numeric cells
-                    header = headers[i] if i < len(headers) else ""
                     formatted_cell = self._format_cell_with_rich_color(
                         cell, header)
                 else:
-                    # Plain text for non-numeric cells
-                    formatted_cell = str(cell) if cell is not None else ""
+                    # Color text cells based on column type
+                    cell_str = str(cell) if cell is not None else ""
+                    if header.upper() in ['SYMBOL', 'TICKER']:
+                        formatted_cell = Text(
+                            cell_str, style="bright_cyan bold")
+                    elif header.upper() in ['PORTFOLIO', 'NAME']:
+                        formatted_cell = Text(cell_str, style="bright_magenta")
+                    elif header.upper() in ['DESCRIPTION', 'DESC']:
+                        formatted_cell = Text(cell_str, style="bright_blue")
+                    else:
+                        formatted_cell = Text(cell_str, style="white")
+
                 formatted_row.append(formatted_cell)
 
             table.add_row(*formatted_row)
@@ -193,11 +222,22 @@ class RichDisplay:
         if title:
             print(title)
 
+        # Determine terminal width based on stretch setting
+        if width:
+            # Use provided width (explicit override)
+            terminal_width = width
+        elif self.config_loader.should_stretch_to_terminal():
+            # Stretch to full terminal width - ignore terminal_width setting
+            terminal_width = self.console.width
+        else:
+            # Use configured terminal width (don't stretch)
+            terminal_width = self.config_loader.get_terminal_width()
+
         table = columnar(
             formatted_data,
             headers=headers,
             no_borders=True,
-            terminal_width=width or self.console.width
+            terminal_width=terminal_width
         )
         print(table)
 
@@ -261,12 +301,19 @@ class RichDisplay:
         """
         table = self.create_table(headers, data, bordered, title)
 
+        # Determine console width based on stretch setting
         if width:
-            # Create a new console with specific width
+            # Use provided width (explicit override)
             console = Console(width=width)
             console.print(table)
-        else:
+        elif self.config_loader.should_stretch_to_terminal():
+            # Stretch to full terminal width - ignore terminal_width setting
             self.console.print(table)
+        else:
+            # Use configured terminal width (don't stretch)
+            configured_width = self.config_loader.get_terminal_width()
+            console = Console(width=configured_width)
+            console.print(table)
 
     def display_portfolio_table(
         self,
