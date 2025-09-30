@@ -70,7 +70,13 @@ class CurrencyFormatter:
 
         # Add currency symbol
         if show_symbol:
-            formatted_value = f"${formatted_value}"
+            if is_negative and negative_format == "parentheses" and not drop_negative_sign:
+                # For parentheses format, put $ inside the parentheses: ($326.94)
+                # Only apply parentheses if we're not dropping the negative sign
+                # Remove existing parentheses and add $ inside
+                formatted_value = f"(${formatted_value[1:-1]})"
+            else:
+                formatted_value = f"${formatted_value}"
 
         # Apply colors if enabled and not in Rich mode
         if colored_mode and not rich_mode and is_negative:

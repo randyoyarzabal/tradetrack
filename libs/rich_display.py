@@ -199,15 +199,13 @@ class RichDisplay:
         Returns:
             Rich Text object with appropriate colors
         """
-        # Only apply gain/loss coloring to specific columns
-        is_gain_loss_column = column_type in ['Gain$', 'Gain%', 'Value']
-
         # For Rich display, use colored_mode from config
+        # If colored_mode is true, use colors and drop negative sign
         # If colored_mode is false, use parentheses for negative values
-        # If colored_mode is true, drop negative sign and use color
         currency_config = self.config_loader.get_currency_config()
-        use_colors = currency_config['colored_mode'] and is_gain_loss_column
-        drop_negative_sign = use_colors  # Only drop negative sign when using colors
+        use_colors = currency_config['colored_mode']
+        is_gain_loss_column = column_type in ['Gain$', 'Gain%', 'Value']
+        drop_negative_sign = use_colors  # Drop negative sign when using colors
 
         # Format the value using currency formatter
         if 'Gain%' in column_type or '%' in column_type:
@@ -365,26 +363,37 @@ class RichDisplay:
         # If colored_mode is false, use parentheses for negative values
         # If colored_mode is true, drop negative sign and use color
         currency_config = self.config_loader.get_currency_config()
-        use_colors = currency_config['colored_mode'] and is_gain_loss_column
-        drop_negative_sign = use_colors  # Only drop negative sign when using colors
+        use_colors = currency_config['colored_mode']
+        drop_negative_sign = use_colors  # Drop negative sign when using colors
 
         # Format the value using currency formatter
         if 'Gain%' in column_type or '%' in column_type:
-            return self.currency_formatter.format_percentage(
+            formatted_text = self.currency_formatter.format_percentage(
                 value,
                 rich_mode=False,
-                colored_mode=use_colors,
+                colored_mode=False,  # Don't use formatter colors, apply our own
                 drop_negative_sign=drop_negative_sign
             )
         elif column_type in ['Cost', 'Gain$', 'Value', 'Ave$', 'Day$', 'Price']:
-            return self.currency_formatter.format_currency(
+            formatted_text = self.currency_formatter.format_currency(
                 value,
                 rich_mode=False,
-                colored_mode=use_colors,
+                colored_mode=False,  # Don't use formatter colors, apply our own
                 drop_negative_sign=drop_negative_sign
             )
         else:
-            return self.currency_formatter.format_number(value, rich_mode=False)
+            formatted_text = self.currency_formatter.format_number(
+                value, rich_mode=False)
+
+        # Apply colors if enabled and this is a gain/loss column
+        if use_colors and is_gain_loss_column:
+            from termcolor import colored
+            if value < 0:
+                return colored(formatted_text, 'red', force_color=True)
+            elif value > 0:
+                return colored(formatted_text, 'green', force_color=True)
+
+        return formatted_text
 
     def _format_numeric_cell(self, value: Union[int, float], header: str) -> str:
         """

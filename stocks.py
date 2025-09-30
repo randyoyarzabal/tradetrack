@@ -810,6 +810,12 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
     $> {0} --all -ic
     $> {0} --list
 
+    # Sorting options
+    $> {0} -p crypto --sort value --desc
+    $> {0} --all --sort gain_pct
+    $> {0} -p robinhood --sort-multi portfolio symbol
+    $> {0} --all --sort-multi portfolio value --desc
+
     # CRUD Operations
     $> {0} --add-lot crypto BTC-USD today 0.5 45000.0
     $> {0} --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
@@ -868,6 +874,14 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
                            default=False, help='Include crypto in portfolio statistics (--all only).')
     portfolio.add_argument('-d', '--day', action='store_true',
                            default=False, help='Show day gains instead of average cost.')
+
+    # Sorting options
+    portfolio.add_argument('--sort', '--sort-by', dest='sort_column',
+                           help='Sort table by specified column. Available: portfolio, symbol, description, qty, ave, price, gain_pct, cost, gain_dollars, value')
+    portfolio.add_argument('--sort-desc', '--desc', action='store_true',
+                           default=False, help='Sort in descending order (default: ascending)')
+    portfolio.add_argument('--sort-multi', nargs='+', metavar='COLUMN',
+                           help='Sort by multiple columns (e.g., --sort-multi portfolio symbol)')
 
     # Lot management options
     lots.add_argument('--add-lot', nargs='+', metavar='ARG',
@@ -931,6 +945,13 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             pl.terminal_width = args.terminal_width
             pl.show_totals = not args.no_totals
             pl.include_crypto = args.crypto
+
+            # Configure sorting
+            pl.set_sorting(
+                column=args.sort_column,
+                descending=args.sort_desc,
+                multi_columns=args.sort_multi
+            )
 
             # Auto-include crypto for specific portfolio display if portfolio contains crypto
             if args.portfolio and not args.all:

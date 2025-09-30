@@ -177,6 +177,32 @@ class ConfigLoader:
         """Check if spinner debug messages should be shown."""
         return self.get_debug_config().get('show_spinner_debug', False)
 
+    def get_sorting_config(self) -> Dict[str, Any]:
+        """Get sorting configuration."""
+        return self.get('display', {}).get('sorting', {
+            'default_sort_column': 'symbol',
+            'default_sort_descending': False,
+            'available_sort_columns': [
+                'portfolio', 'symbol', 'description', 'qty', 'ave',
+                'price', 'gain_pct', 'cost', 'gain_dollars', 'value'
+            ]
+        })
+
+    def get_default_sort_column(self) -> str:
+        """Get the default sort column."""
+        return self.get('display.default_sort_column', 'symbol')
+
+    def get_default_sort_descending(self) -> bool:
+        """Get the default sort order."""
+        return self.get('display.default_sort_descending', False)
+
+    def get_available_sort_columns(self) -> list:
+        """Get list of available sort columns."""
+        return self.get('display.available_sort_columns', [
+            'portfolio', 'symbol', 'description', 'qty', 'ave',
+            'price', 'gain_pct', 'cost', 'gain_dollars', 'value'
+        ])
+
 
 # Global configuration instance
 _config_loader: Optional[ConfigLoader] = None

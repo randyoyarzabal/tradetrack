@@ -42,6 +42,25 @@ class PortfolioLibrary:
         self.headers = ['Portfolio', 'Symbol', 'Description',
                         'Qty', 'Ave$', 'Price', 'Gain%', 'Cost', 'Gain$', 'Value']
 
+        # Sorting configuration
+        self.sort_column = self.config_loader.get_default_sort_column()
+        self.sort_descending = self.config_loader.get_default_sort_descending()
+        self.sort_columns = []  # For multi-column sorting
+
+        # Column mapping for sorting
+        self.sort_column_map = {
+            'portfolio': 'Portfolio',
+            'symbol': 'Symbol',
+            'description': 'Description',
+            'qty': 'Qty',
+            'ave': 'Ave$',  # Will be 'Day$' in day mode
+            'price': 'Price',
+            'gain_pct': 'Gain%',
+            'cost': 'Cost',
+            'gain_dollars': 'Gain$',
+            'value': 'Value'
+        }
+
     def load_portfolios(self, live_data=False):
         """Load all portfolios and prepare data."""
         self.portfolios = self.portfolio_loader.load_portfolios()
@@ -320,12 +339,15 @@ class PortfolioLibrary:
             print(f"No data found for portfolio '{portfolio_name}'")
             return
 
+        # Apply configurable sorting to filtered data
+        sorted_portfolio_data = self._apply_sorting(portfolio_data)
+
         # Convert to display format
-        display_data = self._format_display_data(portfolio_data)
+        display_data = self._format_display_data(sorted_portfolio_data)
 
         # Add totals row if enabled
         if self.show_totals:
-            totals_row = self._create_totals_row(portfolio_data)
+            totals_row = self._create_totals_row(sorted_portfolio_data)
             display_data.append(totals_row)
 
         # Generate portfolio title with average gain percentage
@@ -335,19 +357,27 @@ class PortfolioLibrary:
         # Display the table using appropriate method
         if self.borders:
             # Use Rich table with borders
+            # Remove Portfolio column from both headers and data for single portfolio display
+            headers_without_portfolio = self.headers[1:]  # Remove Portfolio column
+            data_without_portfolio = [row[1:] for row in display_data]  # Remove Portfolio column from each row
+            
             self.rich_display.display_portfolio_table(
                 portfolio_name=portfolio_name,
-                headers=self.headers[1:],  # Remove Portfolio column
-                data=display_data,
+                headers=headers_without_portfolio,
+                data=data_without_portfolio,
                 bordered=True,
                 width=self.terminal_width,
                 title=portfolio_title
             )
         else:
             # Use columnar table without borders
+            # Remove Portfolio column from both headers and data for single portfolio display
+            headers_without_portfolio = self.headers[1:]  # Remove Portfolio column
+            data_without_portfolio = [row[1:] for row in display_data]  # Remove Portfolio column from each row
+            
             self.rich_display.display_columnar_table(
-                headers=self.headers[1:],  # Remove Portfolio column
-                data=display_data,
+                headers=headers_without_portfolio,
+                data=data_without_portfolio,
                 title=portfolio_title,
                 width=self.terminal_width
             )
@@ -361,8 +391,8 @@ class PortfolioLibrary:
             print("No portfolio data available")
             return
 
-        # Sort by symbol
-        sorted_data = self.df.sort_values('Symbol')
+        # Apply configurable sorting
+        sorted_data = self._apply_sorting(self.df)
 
         # Convert to display format
         display_data = self._format_display_data(sorted_data)
@@ -572,6 +602,76 @@ class PortfolioLibrary:
     def get_portfolio_names(self) -> List[str]:
         """Get list of portfolio names."""
         return self.portfolio_loader.get_portfolio_names()
+
+    def set_sorting(self, column: str = None, descending: bool = False, multi_columns: List[str] = None):
+        """
+        Configure sorting options.
+
+        Args:
+            column: Single column to sort by
+            descending: Sort in descending order
+            multi_columns: List of columns for multi-column sorting
+        """
+        if multi_columns:
+            self.sort_columns = multi_columns
+            self.sort_column = None
+        elif column:
+            self.sort_column = column
+            self.sort_columns = []
+
+        self.sort_descending = descending
+
+    def _validate_sort_column(self, column: str) -> str:
+        """
+        Validate and normalize sort column names.
+
+        Args:
+            column: Column name to validate
+
+        Returns:
+            Validated DataFrame column name
+
+        Raises:
+            ValueError: If column name is invalid
+        """
+        if column not in self.sort_column_map:
+            available = list(self.sort_column_map.keys())
+            raise ValueError(
+                f"Invalid sort column '{column}'. Available columns: {', '.join(available)}")
+
+        # Handle day mode for ave column
+        if column == 'ave' and self.day_mode:
+            return 'Day$'
+
+        return self.sort_column_map[column]
+
+    def _apply_sorting(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Apply sorting to DataFrame based on current settings.
+
+        Args:
+            df: DataFrame to sort
+
+        Returns:
+            Sorted DataFrame
+        """
+        if df is None or df.empty:
+            return df
+
+        try:
+            if self.sort_columns:
+                # Multi-column sorting
+                columns = [self._validate_sort_column(
+                    col) for col in self.sort_columns]
+                ascending = [not self.sort_descending] * len(columns)
+                return df.sort_values(columns, ascending=ascending)
+            else:
+                # Single column sorting
+                column = self._validate_sort_column(self.sort_column)
+                return df.sort_values(column, ascending=not self.sort_descending)
+        except ValueError as e:
+            print(f"Warning: {e}. Using default sorting by symbol.")
+            return df.sort_values('Symbol')
 
     def _portfolio_contains_crypto(self, portfolio_name: str) -> bool:
         """Check if a portfolio contains crypto symbols."""

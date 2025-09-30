@@ -17,6 +17,23 @@ display:
   include_crypto: false           # Include crypto by default
   max_description_length: 28      # Maximum characters for company descriptions
   stretch_to_terminal: true       # Stretch tables to full terminal width (true) or respect terminal_width (false)
+  
+  # Sorting Configuration
+  default_sort_column: "symbol"   # Default column to sort by
+  default_sort_descending: false  # Default sort order (false = ascending, true = descending)
+  
+  # Available sort columns (for reference and validation)
+  available_sort_columns:
+    - "portfolio"      # Portfolio name
+    - "symbol"         # Stock symbol
+    - "description"    # Company description
+    - "qty"            # Quantity/shares
+    - "ave"            # Average cost (or day cost in day mode)
+    - "price"          # Current price
+    - "gain_pct"       # Gain percentage
+    - "cost"           # Total cost
+    - "gain_dollars"   # Gain in dollars
+    - "value"          # Current value
 
 # Currency Formatting
 currency:
