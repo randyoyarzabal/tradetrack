@@ -69,8 +69,12 @@ class PortfolioLibrary:
         # Filter stocks based on settings
         filtered_stocks = self._filter_stocks()
 
-        # Get quotes for all symbols
-        symbols = list(filtered_stocks.keys())
+        # Get quotes for all symbols, but exclude those with manual prices
+        all_symbols = list(filtered_stocks.keys())
+        manual_price_symbols = self._get_symbols_with_manual_prices(
+            filtered_stocks)
+        symbols_to_fetch = [
+            s for s in all_symbols if s not in manual_price_symbols]
 
         # Reinitialize YahooQuotes based on live_data flag
         if live_data:
@@ -86,19 +90,21 @@ class PortfolioLibrary:
             from .yahoo_quotes import YahooQuotes
             self.yahoo_quotes = YahooQuotes(load_from_file=True)
 
-        # Check if we have valid cached data
-        if not live_data and self._has_valid_cache(symbols):
-            self.quotes = self._get_cached_quotes(symbols)
+        # Check if we have valid cached data for symbols that need fetching
+        if not live_data and self._has_valid_cache(symbols_to_fetch):
+            self.quotes = self._get_cached_quotes(symbols_to_fetch)
             self._show_cache_message = True
         else:
-            # Determine the reason for live fetch
-            if live_data:
-                reason = "live data requested"
-            else:
-                reason = "cache expired"
+            # Only fetch live data for symbols that don't have manual prices
+            if symbols_to_fetch:
+                # Determine the reason for live fetch
+                if live_data:
+                    reason = "live data requested"
+                else:
+                    reason = "cache expired"
 
-            # Show progress spinner for live data fetch
-            self._fetch_quotes_with_spinner(symbols, reason)
+                # Show progress spinner for live data fetch
+                self._fetch_quotes_with_spinner(symbols_to_fetch, reason)
             self._show_cache_message = False
 
         # Process data into pandas DataFrame
@@ -142,8 +148,8 @@ class PortfolioLibrary:
         else:
             message = "Loading data"
 
-        # Simple text-based spinner that works everywhere
-        spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"  # Braille spinner characters
+        # Classic ASCII spinner compatible with PuTTY and other terminals
+        spinner_chars = "|/-\\"  # Classic ASCII spinner: | / - \
         spinner_running = True
         spinner_index = 0
 
@@ -183,6 +189,19 @@ class PortfolioLibrary:
             filtered[symbol] = stock_data
 
         return filtered
+
+    def _get_symbols_with_manual_prices(self, stocks: Dict[str, Dict[str, Any]]) -> List[str]:
+        """Get list of symbols that have manual prices in their lots."""
+        manual_price_symbols = []
+
+        for symbol, stock_data in stocks.items():
+            # Check if any lot has a manual_price
+            manual_prices = [lot.get(
+                'manual_price') for lot in stock_data['lots'] if lot.get('manual_price')]
+            if manual_prices:
+                manual_price_symbols.append(symbol)
+
+        return manual_price_symbols
 
     def _process_data(self, stocks: Dict[str, Dict[str, Any]]):
         """Process stock data into pandas DataFrame."""
