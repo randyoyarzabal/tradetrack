@@ -1,0 +1,43 @@
+# Example RSU (Restricted Stock Units) Portfolio
+# Copy this file to your portfolios directory and customize it
+
+name: RSU
+description: "Example RSU Portfolio - Company Stock Awards"
+stocks:
+  # Example: Company stock received as RSUs
+  COMPANY-STOCK:
+    description: "Your Company Inc."
+    notes: "RSUs from employment"
+    lots:
+      - date: "2024-01-15"
+        shares: 100
+        cost_basis: 0.00  # RSUs typically have $0 cost basis
+        manual_price: 50.00  # Current market price
+      - date: "2024-04-15"
+        shares: 50
+        cost_basis: 0.00
+        manual_price: 55.00
+
+  # Example: Another company's stock received as compensation
+  TECH-CORP:
+    description: "Tech Corporation Inc."
+    notes: "RSUs from previous employment"
+    lots:
+      - date: "2023-12-01"
+        shares: 200
+        cost_basis: 0.00
+        manual_price: 25.00
+      - date: "2024-03-01"
+        shares: 75
+        cost_basis: 0.00
+        manual_price: 30.00
+
+  # Example: Stock options that have been exercised
+  OPTIONS-EXERCISED:
+    description: "Options Exercised Stock"
+    notes: "Stock from exercised options"
+    lots:
+      - date: "2024-02-01"
+        shares: 150
+        cost_basis: 10.00  # Exercise price
+        manual_price: 45.00

@@ -1,0 +1,68 @@
+# Example Cryptocurrency Portfolio
+# Copy this file to your portfolios directory and customize it
+
+name: CRYPTO
+description: "Example Cryptocurrency Portfolio"
+stocks:
+  BTC-USD:
+    description: "Bitcoin USD"
+    notes: "Digital gold, store of value"
+    lots:
+      - date: "2024-01-15"
+        shares: 0.5
+        cost_basis: 45000.00
+        manual_price: null
+      - date: "2024-03-10"
+        shares: 0.25
+        cost_basis: 60000.00
+        manual_price: null
+
+  ETH-USD:
+    description: "Ethereum USD"
+    notes: "Smart contract platform"
+    lots:
+      - date: "2024-02-01"
+        shares: 2.0
+        cost_basis: 2500.00
+        manual_price: null
+      - date: "2024-04-15"
+        shares: 1.5
+        cost_basis: 3000.00
+        manual_price: null
+
+  DOGE-USD:
+    description: "Dogecoin USD"
+    notes: "Meme coin with strong community"
+    lots:
+      - date: "2024-01-20"
+        shares: 10000
+        cost_basis: 0.08
+        manual_price: null
+
+  ADA-USD:
+    description: "Cardano USD"
+    notes: "Proof-of-stake blockchain"
+    lots:
+      - date: "2024-02-15"
+        shares: 5000
+        cost_basis: 0.45
+        manual_price: null
+
+  SOL-USD:
+    description: "Solana USD"
+    notes: "High-performance blockchain"
+    lots:
+      - date: "2024-03-01"
+        shares: 100
+        cost_basis: 120.00
+        manual_price: null
+
+  # Example of manual price override for delisted/unsupported assets
+  DELISTED-COIN:
+    description: "Delisted Cryptocurrency"
+    notes: "Example of manual price override"
+    lots:
+      - date: "2024-01-01"
+        shares: 1000
+        cost_basis: 0.50
+        manual_price: 0.25  # Manual price override

@@ -1,160 +1,169 @@
 # TradeTrack
 
-**A personal CLI stock trading management and analysis tool.**
+**A modern CLI stock portfolio tracker with real-time data, beautiful displays, and comprehensive analytics.**
 
-TradeTrack is a modern, feature-rich command-line tool for tracking and analyzing your stock and cryptocurrency portfolios. Built with Python, it offers a clean interface, real-time data from Yahoo Finance, and beautiful table displays using the Rich library.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rich](https://img.shields.io/badge/rich-terminal%20display-green.svg)](https://github.com/Textualize/rich)
 
-## ✨ Features
+TradeTrack is a feature-rich command-line tool for tracking and analyzing your stock and cryptocurrency portfolios. Built with Python and the Rich library, it offers real-time data from Yahoo Finance, beautiful table displays, and comprehensive portfolio management.
 
-- **📊 Portfolio Management**: Track multiple portfolios with YAML configuration
-- **💰 Real-time Data**: Live stock and crypto prices via Yahoo Finance API
-- **🎨 Beautiful Display**: Rich tables with borders or clean columnar layout
-- **📈 Comprehensive Analytics**: Detailed statistics, gains/losses, and performance metrics
-- **🔧 Highly Configurable**: Customizable currency formatting, display options, and more
-- **📝 Lot Tracking**: Track individual purchase lots with dates and cost basis
-- **💱 Multi-currency Support**: Handle different currencies and manual price overrides
-- **📊 Export Capabilities**: Export portfolio data to CSV format
-- **🛠️ CRUD Operations**: Create, read, update, and delete portfolios, symbols, and lots
-- **📊 Tax Analysis**: Analyze lot aging and capital gains for tax optimization
-- **🔄 Backup & Restore**: Automatic portfolio backups and restore functionality
+## Key Features
 
-## 🚀 Quick Start
+- **Real-time Data** - Live stock and crypto prices via Yahoo Finance
+- **Beautiful Displays** - Rich tables with borders or clean columnar layout  
+- **Portfolio Management** - Track multiple portfolios with YAML configuration
+- **Comprehensive Analytics** - Detailed statistics, gains/losses, and performance metrics
+- **Highly Configurable** - Customizable display, currency formatting, and sorting
+- **Lot Tracking** - Track individual purchase lots with dates and cost basis
+- **Manual Price Overrides** - Override API prices for delisted or custom assets
+- **CRUD Operations** - Full create, read, update, delete functionality
+- **Tax Analysis** - Analyze lot aging and capital gains for tax optimization
+- **Backup & Restore** - Automatic portfolio backups and restore functionality
+
+## Quick Start
 
 ### Prerequisites
 
 - Python 3.8 or higher
 - pip (Python package installer)
 
+### Configuration File
+
+TradeTrack automatically looks for configuration in this order:
+1. **Environment Variable**: `TTRACK_CONFIG_FILE` (if set)
+2. **Default**: `conf/config.yaml` (relative to application directory)
+
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/randyoyarzabal/stocks.git
    cd stocks
    ```
 
 2. **Create and activate virtual environment:**
+
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Configure your portfolios:**
-   - Update `conf/config.yaml` to point to your portfolio directory
+   - Copy `templates/config.yaml` to `conf/config.yaml` (default location)
+   - Or set `TTRACK_CONFIG_FILE` environment variable to use a custom config location
+   - Update the `portfolios_dir` path in the config to point to your portfolio directory
    - Create your portfolio YAML files in the specified directory
-   - Example: Set `portfolios_dir` to `/path/to/your/portfolios`
+
+### Configuration Options
+
+**Default Configuration:**
+- Config file: `conf/config.yaml` (auto-detected)
+- Portfolios directory: `portfolios/` (configurable in config file)
+
+**Custom Configuration:**
+```bash
+# Use custom config file location
+export TTRACK_CONFIG_FILE="/path/to/custom/config.yaml"
+python ttrack.py -p crypto
+
+# Or specify directly (if supported by your setup)
+python ttrack.py -p crypto --config /path/to/custom/config.yaml
+```
 
 ### Basic Usage
 
 ```bash
 # Display a specific portfolio
-python stocks.py -p crypto
+python ttrack.py -p crypto
 
 # Display with borders (Rich mode)
-python stocks.py -p stocks -b
-
-# Display with full terminal width
-python stocks.py -p crypto -t 0
+python ttrack.py -p stocks -b
 
 # Show all portfolios
-python stocks.py --all
+python ttrack.py --all
 
 # Show all portfolios including crypto
-python stocks.py --all -ic
+python ttrack.py --all -ic
 
 # Display statistics
-python stocks.py --stats
+python ttrack.py --stats
 
 # Export to CSV
-python stocks.py --all -c portfolio_export.csv
+python ttrack.py --all -c portfolio_export.csv
 ```
 
-## 🛠️ CRUD Operations
-
-TradeTrack now includes comprehensive CRUD (Create, Read, Update, Delete) operations for managing your portfolios:
+## Common Commands
 
 ### Portfolio Management
 
 ```bash
 # Create a new portfolio
-python stocks.py --create-portfolio new_portfolio "My new portfolio"
+python ttrack.py --create-portfolio new_portfolio "My new portfolio"
 
 # Delete a portfolio
-python stocks.py --delete-portfolio old_portfolio
+python ttrack.py --delete-portfolio old_portfolio
 
 # List all portfolios
-python stocks.py --list
-```
-
-### Symbol Management
-
-```bash
-# Add a new symbol to a portfolio
-python stocks.py --add-symbol crypto ETH-USD "Ethereum"
-
-# Remove a symbol and all its lots
-python stocks.py --remove-symbol crypto BTC-USD
+python ttrack.py --list
 ```
 
 ### Lot Management
 
 ```bash
 # Add a new lot (uses current date if not specified)
-python stocks.py --add-lot crypto BTC-USD today 0.5 45000.0
+python ttrack.py --add-lot crypto BTC-USD today 0.5 45000.0
 
 # Add a lot with specific date and manual price
-python stocks.py --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
+python ttrack.py --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
 
 # Remove a lot by index
-python stocks.py --remove-lot crypto BTC-USD 0
+python ttrack.py --remove-lot crypto BTC-USD 0
 
 # List all lots for a symbol
-python stocks.py --list-lots crypto BTC-USD
+python ttrack.py --list-lots crypto BTC-USD
 ```
 
-### Tax Analysis
+### Symbol Management
 
 ```bash
-# Analyze tax implications for all symbols in a portfolio
-python stocks.py --tax-analysis crypto all
+# Add a new symbol to a portfolio
+python ttrack.py --add-symbol crypto ETH-USD "Ethereum"
 
-# Analyze tax implications for a specific symbol
-python stocks.py --tax-analysis crypto BTC-USD
+# Remove a symbol and all its lots
+python ttrack.py --remove-symbol crypto BTC-USD
 ```
 
-### Backup & Restore
+### Display Options
 
 ```bash
-# Create a backup of a portfolio
-python stocks.py --backup-portfolio crypto
+# Rich tables with borders
+python ttrack.py -p crypto -b
 
-# Restore a portfolio from backup
-python stocks.py --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
+# Sort by gain dollars (descending)
+python ttrack.py --all --sort gain_dollars --sort-desc
+
+# Show day gains instead of average cost
+python ttrack.py -p crypto -d
+
+# Force live data fetch
+python ttrack.py -p crypto --live
 ```
 
-### Key Features
+## Project Structure
 
-- **Automatic Sorting**: Portfolios are kept in alphabetical order, lots sorted by date (newest first)
-- **Default Values**: New lots default to current date if not specified
-- **Tax Analysis**: Track lot aging and capital gains for tax optimization
-- **Backup System**: Automatic timestamped backups before major changes
-- **Validation**: Comprehensive input validation and error handling
-
-## 📁 Project Structure
-
-```
+```text
 tradetrack/
 ├── conf/
 │   ├── config.yaml              # Main configuration file
-│   └── portfolios/              # Portfolio YAML files
-│       ├── crypto.yaml
-│       ├── stocks.yaml
-│       └── ...
+│   └── constants.py             # Application constants
 ├── libs/
 │   ├── config_loader.py         # Configuration management
 │   ├── currency_formatter.py    # Currency formatting utilities
@@ -164,75 +173,89 @@ tradetrack/
 │   ├── rich_display.py          # Rich table display
 │   ├── tax_analysis.py          # Tax analysis and lot aging
 │   └── yahoo_quotes.py          # Yahoo Finance API integration
-├── stocks.py                    # Main CLI application with CRUD operations
+├── docs/                        # Extended documentation
+│   ├── configuration.md         # Detailed configuration guide
+│   ├── dependencies.md          # Requirements and dependency information
+│   ├── portfolio-format.md      # Portfolio YAML format guide
+│   ├── advanced-features.md     # Advanced features and tips
+│   └── troubleshooting.md       # Common issues and solutions
+├── templates/                   # Example files and templates
+│   ├── config.yaml              # Configuration template
+│   └── portfolios/              # Portfolio templates
+│       ├── stocks.yaml          # Example stock portfolio
+│       ├── crypto.yaml          # Example crypto portfolio
+│       ├── etfs.yaml            # Example ETF portfolio
+│       ├── rsu.yaml             # Example RSU portfolio
+│       └── empty.yaml           # Empty portfolio template
+├── ttrack.py                    # Main CLI application
 ├── requirements.txt             # Python dependencies
 └── README.md                   # This file
 ```
 
-## ⚙️ Configuration
+## Configuration
 
-### Main Configuration (`conf/config.yaml`)
+### Quick Configuration
 
-The main configuration file controls all aspects of the application:
+Edit `conf/config.yaml` to customize your experience:
 
 ```yaml
-# Application Information
-app:
-  name: "Stock Portfolio Tracker"
-  version: "v1.0"
-
-# File Paths
-paths:
-  portfolios_dir: "conf/portfolios"
-  config_file: "conf/config.yaml"
-
 # Display Options
 display:
-  terminal_width: 120
-  borders: false
-  show_totals: true
-  include_crypto: false
+  terminal_width: 120             # Terminal width
+  borders: false                  # Default border setting
+  show_totals: true               # Show totals row
+  include_crypto: false           # Include crypto by default
+  max_description_length: 28      # Max characters for descriptions
+  stretch_to_terminal: false      # Stretch tables to full width
 
 # Currency Formatting
 currency:
-  decimal_places: 2
-  show_symbol: true
-  colored_mode: true
-  negative_format: "parentheses"
+  decimal_places: 2               # Number of decimal places
+  show_symbol: true               # Show $ symbol
+  colored_mode: true              # Use colors for positive/negative
+  negative_format: "parentheses"  # Format for negative values
 
-# Table Display
-tables:
-  bordered_style: "heavy"
-  columnar_style: "clean"
-  header_style: "bold"
-  number_alignment: "right"
+# Sorting Options
+display:
+  default_sort_column: "symbol"   # Default sort column
+  default_sort_descending: false  # Default sort order
+  available_sort_columns:         # Available sort options
+    - "portfolio"
+    - "symbol"
+    - "description"
+    - "qty"
+    - "ave"
+    - "price"
+    - "gain_pct"
+    - "cost"
+    - "gain_dollars"
+    - "value"
 ```
 
-### Portfolio Format (`conf/portfolios/your_portfolio.yaml`)
-
-Portfolios are defined in YAML format with the following structure:
+### Portfolio Format
+Portfolios are defined in YAML format:
 
 ```yaml
-name: PORTFOLIO_NAME
-description: "Portfolio description"
+name: CRYPTO
+description: "Cryptocurrency Portfolio"
 stocks:
-  SYMBOL:
-    description: "Company/Asset description"
-    notes: "Your notes about this investment"
+  BTC-USD:
+    description: "Bitcoin USD"
     lots:
-      - date: "YYYY-MM-DD"
-        shares: 10.5
-        cost_basis: 150.25
+      - date: "2024-01-15"
+        shares: 0.5
+        cost_basis: 45000.0
         manual_price: null  # Optional override price
-      - date: "YYYY-MM-DD"
-        shares: 5.0
-        cost_basis: 160.00
-        manual_price: 155.50
+  ETH-USD:
+    description: "Ethereum USD"
+    lots:
+      - date: "2024-02-01"
+        shares: 2.0
+        cost_basis: 2500.0
+        manual_price: 2600.0  # Override current price
 ```
 
-## 🎯 Command Line Options
-
-The command line options are organized into logical groups for better usability:
+## Command Reference
 
 ### General Options
 
@@ -242,15 +265,17 @@ The command line options are organized into logical groups for better usability:
 | `-v, --version` | Show version information |
 | `--debug` | Enable debug mode |
 
-### Screen Display Options
+### Display Options
 
 | Option | Description |
 |--------|-------------|
 | `-b, --borders` | Use Rich tables with borders |
 | `-t WIDTH` | Set terminal width (0 = stretch to full width) |
 | `-n, --no_totals` | Hide totals row |
+| `-ic, --crypto` | Include cryptocurrency (--all only) |
+| `-d, --day` | Show day gains instead of average cost |
 
-### Portfolio Display Options
+### Portfolio Options
 
 | Option | Description |
 |--------|-------------|
@@ -259,39 +284,14 @@ The command line options are organized into logical groups for better usability:
 | `--list` | List available portfolios |
 | `-s, --stats` | Show portfolio statistics |
 | `-c FILE` | Export to CSV file |
-| `-ic, --crypto` | Include cryptocurrency (--all only) |
-| `-d, --day` | Show day gains instead of average cost |
 
-### Lot Management Options
+### Sorting Options
 
 | Option | Description |
 |--------|-------------|
-| `--add-lot PORTFOLIO SYMBOL DATE SHARES COST_BASIS [MANUAL_PRICE]` | Add a new lot to a portfolio |
-| `--remove-lot PORTFOLIO SYMBOL LOT_INDEX` | Remove a lot from a portfolio |
-| `--update-lot PORTFOLIO SYMBOL LOT_INDEX FIELD` | Update a lot field |
-| `--list-lots PORTFOLIO SYMBOL` | List all lots for a symbol |
-
-### Symbol Management Options
-
-| Option | Description |
-|--------|-------------|
-| `--add-symbol PORTFOLIO SYMBOL DESCRIPTION` | Add a new symbol to a portfolio |
-| `--remove-symbol PORTFOLIO SYMBOL` | Remove a symbol and all its lots |
-
-### Portfolio Management Options
-
-| Option | Description |
-|--------|-------------|
-| `--create-portfolio PORTFOLIO DESCRIPTION` | Create a new portfolio |
-| `--delete-portfolio PORTFOLIO` | Delete a portfolio |
-| `--backup-portfolio PORTFOLIO` | Create a backup of a portfolio |
-| `--restore-portfolio BACKUP_FILE PORTFOLIO` | Restore a portfolio from backup |
-
-### Analysis Options
-
-| Option | Description |
-|--------|-------------|
-| `--tax-analysis PORTFOLIO SYMBOL` | Show tax analysis for portfolio/symbol |
+| `--sort COLUMN` | Sort by column (see available columns in config) |
+| `--sort-desc` | Sort in descending order |
+| `--sort-multi COL1,COL2` | Sort by multiple columns |
 
 ### Data Options
 
@@ -299,34 +299,30 @@ The command line options are organized into logical groups for better usability:
 |--------|-------------|
 | `--live` | Force live data fetch (bypass cache) |
 
-## 📊 Display Modes
+## Display Modes
 
 ### Columnar Mode (Default)
+
 Clean, borderless tables perfect for quick viewing:
+
 ```bash
-python stocks.py -p crypto
+python ttrack.py -p crypto
 ```
 
 ### Rich Mode (Bordered)
+
 Beautiful tables with borders and enhanced formatting:
+
 ```bash
-python stocks.py -p crypto -b
+python ttrack.py -p crypto -b
 ```
 
-## 💰 Currency Formatting
-
-TradeTrack offers flexible currency formatting:
-
-- **Decimal Places**: Configurable precision (default: 2)
-- **Symbol Display**: Toggle $ symbol on/off
-- **Color Coding**: Red for losses, green for gains
-- **Negative Format**: Parentheses or minus sign
-- **Rich Integration**: Proper color handling in both display modes
-
-## 🔧 Advanced Features
+## Advanced Features
 
 ### Manual Price Overrides
+
 Override API prices for specific lots:
+
 ```yaml
 lots:
   - date: "2023-01-15"
@@ -335,66 +331,67 @@ lots:
     manual_price: 155.50  # Override current price
 ```
 
-### Lot Tracking
-Track multiple purchase lots with different dates and costs:
-```yaml
-stocks:
-  AAPL:
-    lots:
-      - date: "2023-01-10"
-        shares: 10
-        cost_basis: 150.25
-      - date: "2023-06-15"
-        shares: 5
-        cost_basis: 175.50
+### Tax Analysis
+
+Analyze lot aging and capital gains:
+
+```bash
+# Analyze tax implications for all symbols
+python ttrack.py --tax-analysis crypto all
+
+# Analyze tax implications for a specific symbol
+python ttrack.py --tax-analysis crypto BTC-USD
 ```
 
-### Statistics and Analytics
-Comprehensive portfolio analysis:
-- Total cost, value, and gains
-- Average performance metrics
-- Min/max values across all holdings
-- Individual stock performance
+### Backup & Restore
 
-## 🛠️ Development
+```bash
+# Create a backup of a portfolio
+python ttrack.py --backup-portfolio crypto
+
+# Restore a portfolio from backup
+python ttrack.py --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
+```
+
+## Development
 
 ### Setting Up Development Environment
 
-1. **Clone and setup:**
-   ```bash
-   git clone https://github.com/randyoyarzabal/stocks.git
-   cd stocks
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
+```bash
+git clone https://github.com/randyoyarzabal/stocks.git
+cd stocks
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-2. **Run tests:**
-   ```bash
-   python -m pytest tests/
-   ```
+### Running Tests
 
-3. **Debug mode:**
-   ```bash
-   python stocks.py --debug -p crypto
-   ```
+```bash
+python -m pytest tests/
+```
 
-### Adding New Features
+### Debug Mode
 
-1. **Configuration**: Add new options to `conf/config.yaml`
-2. **Portfolio Logic**: Extend `libs/portfolio_library.py`
-3. **Display**: Modify `libs/rich_display.py`
-4. **Data Sources**: Update `libs/yahoo_quotes.py`
+```bash
+python ttrack.py --debug -p crypto
+```
 
-## 📝 License
+## Documentation
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+For detailed documentation, see the `/docs` folder:
 
-## 🤝 Contributing
+- **[Configuration Guide](docs/configuration.md)** - Detailed configuration options
+- **[Portfolio Format](docs/portfolio-format.md)** - Portfolio YAML format guide
+- **[Dependencies](docs/dependencies.md)** - Requirements and dependency information
+- **[Advanced Features](docs/advanced-features.md)** - Advanced features and tips
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-## 📞 Support
+## Support
 
 If you encounter any issues or have questions:
 
@@ -402,12 +399,16 @@ If you encounter any issues or have questions:
 2. Create a new issue with detailed information
 3. Include your configuration and error messages
 
-## 🙏 Acknowledgments
+## License
 
-- **Yahoo Finance**: For providing free financial data
-- **Rich Library**: For beautiful terminal displays
-- **Python Community**: For excellent libraries and tools
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- **Yahoo Finance** - For providing free financial data
+- **Rich Library** - For beautiful terminal displays
+- **Python Community** - For excellent libraries and tools
 
 ---
 
-**TradeTrack** - Making portfolio management simple and beautiful! 📈✨
+**TradeTrack** - Making portfolio management simple and beautiful!

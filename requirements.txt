@@ -1,11 +1,37 @@
-# Core dependencies
-rich>=13.0.0
-yfinance>=0.2.0
-pyyaml>=6.0
-pandas>=1.5.0
-termcolor>=2.0.0
-python-dotenv>=1.0.0
+# TradeTrack Dependencies
+# This file contains all required Python packages for TradeTrack
 
-# Optional dependencies for enhanced functionality
-requests>=2.28.0
-numpy>=1.24.0
+# Core Dependencies
+# Rich library for beautiful terminal displays and tables
+rich>=14.1.0
+
+# Yahoo Finance API for real-time stock and crypto data
+yfinance>=0.2.66
+
+# YAML configuration file parsing
+pyyaml>=6.0
+
+# Data manipulation and analysis
+pandas>=2.3.0
+
+# Terminal text coloring for columnar display
+termcolor>=3.1.0
+
+# Environment variable management
+python-dotenv>=1.1.0
+
+# HTTP requests library (used by yfinance)
+requests>=2.32.0
+
+# Numerical computing (required by pandas)
+numpy>=2.3.0
+
+# Columnar table display for non-Rich mode
+columnar>=1.4.0
+
+# Development Dependencies (optional)
+# Uncomment these for development work:
+# pytest>=7.0.0          # Testing framework
+# black>=23.0.0           # Code formatting
+# flake8>=6.0.0           # Linting
+# mypy>=1.0.0             # Type checking

@@ -21,7 +21,7 @@ class ConfigLoader:
             config_path: Path to configuration file. If None, uses environment variable.
         """
         if config_path is None:
-            config_path = os.getenv('CONFIG_FILE', 'conf/config.yaml')
+            config_path = os.getenv('TTRACK_CONFIG_FILE', 'conf/config.yaml')
 
         self.config_path = Path(config_path)
         self._config: Optional[Dict[str, Any]] = None

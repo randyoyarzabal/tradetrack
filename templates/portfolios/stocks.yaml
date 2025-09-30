@@ -1,0 +1,58 @@
+# Example Stock Portfolio
+# Copy this file to your portfolios directory and customize it
+
+name: STOCKS
+description: "Example Stock Portfolio"
+stocks:
+  AAPL:
+    description: "Apple Inc."
+    notes: "Tech giant with strong ecosystem"
+    lots:
+      - date: "2024-01-15"
+        shares: 10
+        cost_basis: 150.25
+        manual_price: null
+      - date: "2024-03-20"
+        shares: 5
+        cost_basis: 175.50
+        manual_price: null
+
+  MSFT:
+    description: "Microsoft Corporation"
+    notes: "Cloud computing leader"
+    lots:
+      - date: "2024-02-01"
+        shares: 8
+        cost_basis: 380.00
+        manual_price: null
+
+  GOOGL:
+    description: "Alphabet Inc. Class A"
+    notes: "Search and advertising giant"
+    lots:
+      - date: "2024-01-10"
+        shares: 3
+        cost_basis: 140.00
+        manual_price: null
+
+  TSLA:
+    description: "Tesla Inc."
+    notes: "Electric vehicle and clean energy"
+    lots:
+      - date: "2024-02-15"
+        shares: 2
+        cost_basis: 200.00
+        manual_price: null
+      - date: "2024-04-01"
+        shares: 1
+        cost_basis: 180.00
+        manual_price: null
+
+  NVDA:
+    description: "NVIDIA Corporation"
+    notes: "AI and graphics processing leader"
+    lots:
+      - date: "2024-03-01"
+        shares: 4
+        cost_basis: 800.00
+        manual_price: null

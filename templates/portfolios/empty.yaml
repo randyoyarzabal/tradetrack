@@ -1,0 +1,25 @@
+# Empty Portfolio Template
+# Copy this file to your portfolios directory and customize it
+
+name: EMPTY
+description: "Empty Portfolio Template - Add your stocks here"
+stocks:
+  # Add your stocks here following this format:
+  # SYMBOL:
+  #   description: "Company or Asset Name"
+  #   notes: "Your notes about this investment"
+  #   lots:
+  #     - date: "YYYY-MM-DD"
+  #       shares: 10.0
+  #       cost_basis: 150.00
+  #       manual_price: null  # Optional: override current price
+  #
+  # Example:
+  # AAPL:
+  #   description: "Apple Inc."
+  #   notes: "Tech giant with strong ecosystem"
+  #   lots:
+  #     - date: "2024-01-15"
+  #       shares: 10
+  #       cost_basis: 150.25
+  #       manual_price: null

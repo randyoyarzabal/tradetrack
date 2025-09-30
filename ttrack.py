@@ -84,24 +84,6 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
             # join the section-initial newline, the heading and the help
             return join(['\n', heading, item_help, '\n'])
 
-    def _format_action_invocation(self, action):
-        """Format action invocation with colors."""
-        if not action.option_strings:
-            # Positional arguments
-            return super()._format_action_invocation(action)
-
-        # Colorize option strings
-        parts = []
-        for option_string in action.option_strings:
-            if option_string.startswith('--'):
-                # Long options in cyan
-                parts.append(colored(option_string, 'cyan', force_color=True))
-            else:
-                # Short options in green
-                parts.append(colored(option_string, 'green', force_color=True))
-
-        return ', '.join(parts)
-
     def _format_usage(self, usage, actions, groups, prefix):
         """Format usage with colors."""
         # Colorize the usage prefix
@@ -133,17 +115,39 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
             elif line.strip().startswith('Modern portfolio tracker'):
                 # Colorize the description
                 colored_lines.append(colored(line, 'green', force_color=True))
-            elif line.strip().startswith('Example usage:'):
-                # Colorize section headers
+            elif line.strip().startswith('Examples:'):
+                # Colorize examples header
                 colored_lines.append(
                     colored(line, 'yellow', attrs=['bold'], force_color=True))
-            elif line.strip().startswith('$> '):
+            elif line.strip().startswith('Portfolio Display:') or line.strip().startswith('Sorting & Filtering:') or line.strip().startswith('Lot Management:') or line.strip().startswith('Symbol Management:') or line.strip().startswith('Portfolio Management:') or line.strip().startswith('Analysis & Export:') or line.strip().startswith('Display Options:'):
+                # Colorize section headers with standardized orange color
+                colored_lines.append(
+                    colored(line, 'yellow', attrs=['bold'], force_color=True))
+            elif line.strip().startswith('ttrack.py '):
                 # Colorize command examples
                 colored_lines.append(colored(line, 'white', force_color=True))
             else:
                 colored_lines.append(line)
 
         return '\n'.join(colored_lines)
+
+    def _format_action_invocation(self, action):
+        """Format action invocation with colors."""
+        if not action.option_strings:
+            # Positional arguments
+            return super()._format_action_invocation(action)
+
+        # Colorize option strings
+        parts = []
+        for option_string in action.option_strings:
+            if option_string.startswith('--'):
+                # Long options in cyan
+                parts.append(colored(option_string, 'cyan', force_color=True))
+            else:
+                # Short options in green
+                parts.append(colored(option_string, 'green', force_color=True))
+
+        return ', '.join(parts)
 
     def _format_action(self, action):
         """Format individual actions with consistent indentation."""
@@ -808,35 +812,49 @@ by {AUTHOR}
 
 Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich display.
 """,
-        epilog="""Example usage:
+        epilog="""Examples:
 
-    # Display portfolios
-    $> {0} -p crypto
-    $> {0} -p crypto -p stocks -b
-    $> {0} -p crypto -t 0
-    $> {0} --stats
-    $> {0} --all -b
-    $> {0} --all -ic
-    $> {0} --list
+  Portfolio Display:
+    {0} -p crypto                    # Display crypto portfolio
+    {0} -p crypto -p stocks -b       # Multiple portfolios with borders
+    {0} --all -b                     # All portfolios with Rich tables
+    {0} --all -ic                    # All portfolios including crypto
+    {0} --stats                      # Portfolio statistics
+    {0} --list                       # List available portfolios
 
-    # Sorting options
-    $> {0} -p crypto --sort value --desc
-    $> {0} --all --sort gain_pct
-    $> {0} -p robinhood --sort-multi portfolio symbol
-    $> {0} --all --sort-multi portfolio value --desc
+  Sorting & Filtering:
+    {0} -p crypto --sort value --desc    # Sort by value descending
+    {0} --all --sort gain_pct            # Sort by gain percentage
+    {0} -p robinhood --sort-multi portfolio symbol  # Multi-column sort
+    {0} --all --sort-multi portfolio value --desc   # Complex sorting
 
-    # CRUD Operations
-    $> {0} --add-lot crypto BTC-USD today 0.5 45000.0
-    $> {0} --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
-    $> {0} --remove-lot crypto BTC-USD 0
-    $> {0} --add-symbol crypto ETH-USD "Ethereum"
-    $> {0} --remove-symbol crypto BTC-USD
-    $> {0} --create-portfolio new_portfolio "My new portfolio"
-    $> {0} --delete-portfolio old_portfolio
-    $> {0} --backup-portfolio crypto
-    $> {0} --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
-    $> {0} --list-lots crypto BTC-USD
-    $> {0} --tax-analysis crypto all
+  Lot Management:
+    {0} --add-lot crypto BTC-USD today 0.5 45000.0
+    {0} --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
+    {0} --remove-lot crypto BTC-USD 0
+    {0} --update-lot crypto BTC-USD 0 shares 0.75
+    {0} --list-lots crypto BTC-USD
+
+  Symbol Management:
+    {0} --add-symbol crypto ETH-USD "Ethereum"
+    {0} --remove-symbol crypto BTC-USD
+
+  Portfolio Management:
+    {0} --create-portfolio new_portfolio "My new portfolio"
+    {0} --delete-portfolio old_portfolio
+    {0} --backup-portfolio crypto
+    {0} --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
+
+  Analysis & Export:
+    {0} --tax-analysis crypto all        # Tax analysis for all symbols
+    {0} --tax-analysis robinhood AAPL   # Tax analysis for specific symbol
+    {0} --all -c portfolio_export.csv   # Export to CSV
+    {0} --all --live                    # Force live data fetch
+
+  Display Options:
+    {0} -p crypto -t 120               # Set terminal width to 120
+    {0} --all -n                       # Hide totals row
+    {0} -p crypto -d                   # Show day gains instead of average cost
 
 """.format(tool)
     )

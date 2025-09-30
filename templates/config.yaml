@@ -1,12 +1,13 @@
+# TradeTrack Configuration Template
+# Copy this file to conf/config.yaml and customize it
+
 # Stock Portfolio Tracker Configuration
 # This file contains all configurable settings for the portfolio tracker
 
-# Application Information is defined in conf/constants.py
-
 # File Paths Configuration
 paths:
-  portfolios_dir: "/Users/royarzab/chief_plugins/stocks/portfolios"          # Directory containing portfolio YAML files
-  log_file: "/Users/royarzab/chief_plugins/stocks/portfolios/portfolio.log"  # Log file path (optional)
+  portfolios_dir: "portfolios"  # Directory containing portfolio YAML files
+  log_file: "logs/portfolio.log"    # Log file path (optional)
 
 # Display Configuration
 display:
@@ -15,7 +16,7 @@ display:
   show_totals: true               # Show totals row by default
   include_crypto: false           # Include crypto by default
   max_description_length: 28      # Maximum characters for company descriptions
-  stretch_to_terminal: false       # Stretch tables to full terminal width (true) or respect terminal_width (false)
+  stretch_to_terminal: false      # Stretch tables to full terminal width (true) or respect terminal_width (false)
   
   # Sorting Configuration
   default_sort_column: "symbol"   # Default column to sort by
@@ -44,43 +45,20 @@ currency:
 # Table Display Options
 tables:
   bordered_style: "heavy"         # Border style for -b flag: "light", "heavy", "double"
-  columnar_style: "clean"         # Style for columnar display: "clean", "minimal"
-  header_style: "bold"            # Header text style: "bold", "italic", "normal"
-  number_alignment: "right"       # Number column alignment: "left", "right", "center"
+  columnar_style: "clean"         # Style for columnar display
+  header_style: "bold"            # Header text style
+  number_alignment: "right"       # Number alignment: "left", "center", "right"
 
 # API Configuration
 api:
   yahoo:
     timeout: 30                   # Request timeout in seconds
-    retries: 3                    # Number of retries on failure
-    cache_duration: 3600          # Cache duration in seconds (1 hour)
+    retries: 3                    # Number of retry attempts
+    cache_duration: 300           # Cache duration in seconds (5 minutes)
+  td_ameritrade:
+    enabled: false                # Enable TD Ameritrade API (not implemented)
+    client_id: ""                 # TD Ameritrade client ID
+    redirect_uri: ""              # TD Ameritrade redirect URI
 
-# Debug Configuration
-debug:
-  enabled: false                  # Enable debug output
-  show_cache_status: false        # Show cache loading/saving messages
-  show_spinner_debug: false       # Show spinner debug messages
-  
-
-# Portfolio Configuration
-portfolio:
-  default_currency: "USD"         # Default currency for calculations
-  lot_date_format: "%Y-%m-%d"     # Date format for lot dates
-  auto_detect_crypto: true        # Automatically detect crypto symbols
-  crypto_symbols:                 # Known crypto symbols
-    - "BTC-USD"
-    - "ETH-USD"
-    - "DOGE-USD"
-    - "LTC-USD"
-    - "XRP-USD"
-    - "MATIC-USD"
-    - "XLM-USD"
-    - "SHIB-USD"
-    - "TEL-USD"
-
-# Logging Configuration
-logging:
-  level: "INFO"                   # Log level: DEBUG, INFO, WARNING, ERROR
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  file_logging: false             # Enable file logging
-  console_logging: true           # Enable console logging
+# Note: Crypto symbols are automatically detected at runtime
+# No need to configure them manually in most cases

@@ -1,0 +1,63 @@
+# Example ETF Portfolio
+# Copy this file to your portfolios directory and customize it
+
+name: ETFS
+description: "Example ETF Portfolio for Diversification"
+stocks:
+  VTI:
+    description: "Vanguard Total Stock Market ETF"
+    notes: "Total US stock market exposure"
+    lots:
+      - date: "2024-01-01"
+        shares: 50
+        cost_basis: 250.00
+        manual_price: null
+      - date: "2024-03-15"
+        shares: 25
+        cost_basis: 260.00
+        manual_price: null
+
+  VXUS:
+    description: "Vanguard Total International Stock ETF"
+    notes: "International stock market exposure"
+    lots:
+      - date: "2024-01-15"
+        shares: 30
+        cost_basis: 60.00
+        manual_price: null
+
+  BND:
+    description: "Vanguard Total Bond Market ETF"
+    notes: "US bond market exposure"
+    lots:
+      - date: "2024-02-01"
+        shares: 40
+        cost_basis: 80.00
+        manual_price: null
+
+  QQQ:
+    description: "Invesco QQQ Trust"
+    notes: "NASDAQ-100 technology stocks"
+    lots:
+      - date: "2024-01-10"
+        shares: 10
+        cost_basis: 400.00
+        manual_price: null
+
+  ARKK:
+    description: "ARK Innovation ETF"
+    notes: "Disruptive innovation companies"
+    lots:
+      - date: "2024-02-20"
+        shares: 15
+        cost_basis: 50.00
+        manual_price: null
+
+  SPY:
+    description: "SPDR S&P 500 ETF Trust"
+    notes: "S&P 500 index tracking"
+    lots:
+      - date: "2024-01-05"
+        shares: 20
+        cost_basis: 500.00
+        manual_price: null
