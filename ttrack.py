@@ -730,21 +730,37 @@ class PortfolioCRUD:
                 return
 
             if symbol:
-                if symbol not in stocks:
+                # Convert symbol to uppercase for case-insensitive matching
+                symbol_upper = symbol.upper()
+                if symbol_upper not in stocks:
                     print(f"Symbol '{symbol}' not found in portfolio")
                     return
-                stocks = {symbol: stocks[symbol]}
+                stocks = {symbol_upper: stocks[symbol_upper]}
 
-            print(f"\nTax Analysis for portfolio '{portfolio_name}':")
-            print("=" * 80)
+            print(
+                f"\n{colored('Tax Analysis for portfolio', 'cyan', attrs=['bold'])} {colored(f"'{portfolio_name}'", 'yellow', attrs=['bold'])}:")
+            print(colored("=" * 80, 'cyan'))
+
+            # Fetch current prices for all symbols
+            from libs.yahoo_quotes import get_yahoo_quotes
+            yahoo_quotes = get_yahoo_quotes()
+            symbols_to_fetch = list(stocks.keys())
+            current_prices = yahoo_quotes.get_quotes(symbols_to_fetch)
 
             for sym, stock_data in stocks.items():
                 lots = stock_data.get('lots', [])
                 if not lots:
                     continue
 
-                print(f"\n{sym} ({stock_data.get('description', '')}):")
-                print("-" * 60)
+                print(
+                    f"\n{colored(sym, 'green', attrs=['bold'])} {colored(f'({stock_data.get('description', '')})', 'white')}:")
+                print(colored("-" * 60, 'green'))
+
+                # Get current price for this symbol
+                current_price_data = current_prices.get(sym)
+                current_price = None
+                if current_price_data:
+                    current_price = current_price_data.get('current_price')
 
                 # Analyze each lot
                 for i, lot in enumerate(lots):
@@ -760,29 +776,211 @@ class PortfolioCRUD:
                     total_cost = shares * cost_basis
 
                     print(
-                        f"  Lot [{i}] {lot['date']}: {shares:>8.4f} shares @ ${cost_basis:>8.4f}")
+                        f"  {colored('Lot', 'blue')} [{colored(i, 'yellow')}] {colored(lot['date'], 'cyan')}: {colored(f'{shares:>8.4f} shares', 'white')} @ {colored(f'${cost_basis:>7.4f}', 'green')}")
                     print(
-                        f"    Days held: {days_held:>4d} ({years_held:.2f} years) - {term_type}")
-                    print(f"    Total cost: ${total_cost:>10.2f}")
+                        f"    {colored('Days held:', 'blue')} {colored(f'{days_held:>4d}', 'white')} ({colored(f'{years_held:.2f} years', 'white')}) - {colored(term_type, 'red' if not is_long_term else 'green', attrs=['bold'])}")
+                    print(
+                        f"    {colored('Total cost:', 'blue')} {colored(f'${total_cost:>8.2f}', 'green')}")
 
-                    if lot.get('manual_price'):
-                        current_price = lot['manual_price']
-                        current_value = shares * current_price
+                    # Use manual price if available, otherwise use current market price
+                    price_to_use = lot.get('manual_price') or current_price
+                    if price_to_use:
+                        current_value = shares * price_to_use
                         gain_loss = current_value - total_cost
                         gain_pct = (gain_loss / total_cost *
                                     100) if total_cost > 0 else 0
 
+                        price_source = "manual price" if lot.get(
+                            'manual_price') else "current market price"
                         print(
-                            f"    Current value: ${current_value:>10.2f} (manual price: ${current_price:.4f})")
+                            f"    {colored('Current value:', 'blue')} {colored(f'${current_value:>8.2f}', 'green')} ({colored(price_source, 'yellow')}: {colored(f'${price_to_use:.4f}', 'green')})")
+
+                        # Color code gains/losses
+                        gain_color = 'green' if gain_loss >= 0 else 'red'
                         print(
-                            f"    Gain/Loss: ${gain_loss:>10.2f} ({gain_pct:>6.2f}%)")
+                            f"    {colored('Gain/Loss:', 'blue')} {colored(f'${gain_loss:>8.2f}', gain_color, attrs=['bold'])} ({colored(f'{gain_pct:>6.2f}%', gain_color, attrs=['bold'])})")
+
+                        tax_treatment = 'Long-term capital gains' if is_long_term else 'Short-term capital gains'
+                        tax_color = 'green' if is_long_term else 'red'
                         print(
-                            f"    Tax treatment: {'No capital gains' if is_long_term else 'Short-term capital gains'}")
+                            f"    {colored('Tax treatment:', 'blue')} {colored(tax_treatment, tax_color, attrs=['bold'])}")
+                    else:
+                        print(
+                            f"    {colored('Current value:', 'blue')} {colored('N/A (price not available)', 'red')}")
 
                     print()
 
         except Exception as e:
             print(f"Error in tax analysis: {e}")
+
+    def get_tax_harvesting_opportunities(self, borders: bool = False) -> None:
+        """
+        Get tax harvesting opportunities across all portfolios.
+        Shows long-term holdings (1+ years old) with potential gains.
+        """
+        try:
+            # Get all portfolio files
+            portfolio_files = list(self.portfolios_dir.glob("*.yaml"))
+            if not portfolio_files:
+                print("No portfolios found")
+                return
+
+            all_long_term_lots = []
+
+            # Process each portfolio
+            for portfolio_file in portfolio_files:
+                portfolio_name = portfolio_file.stem
+
+                with open(portfolio_file, 'r') as f:
+                    portfolio_data = yaml.safe_load(f)
+
+                stocks = portfolio_data.get('stocks', {})
+                if not stocks:
+                    continue
+
+                # Process each stock in the portfolio
+                for symbol, stock_data in stocks.items():
+                    lots = stock_data.get('lots', [])
+                    if not lots:
+                        continue
+
+                    # Analyze each lot
+                    for i, lot in enumerate(lots):
+                        purchase_date = datetime.strptime(
+                            lot['date'], '%Y-%m-%d')
+                        days_held = (datetime.now() - purchase_date).days
+                        years_held = days_held / 365.25
+
+                        # Only include long-term holdings (1+ years)
+                        if years_held >= 1.0:
+                            shares = lot['shares']
+                            cost_basis = lot['cost_basis']
+                            total_cost = shares * cost_basis
+
+                            all_long_term_lots.append({
+                                'portfolio': portfolio_name,
+                                'symbol': symbol,
+                                'description': stock_data.get('description', ''),
+                                'lot_index': i,
+                                'purchase_date': lot['date'],
+                                'days_held': days_held,
+                                'years_held': years_held,
+                                'shares': shares,
+                                'cost_basis': cost_basis,
+                                'total_cost': total_cost,
+                                'manual_price': lot.get('manual_price')
+                            })
+
+            if not all_long_term_lots:
+                print("No long-term holdings found for tax harvesting")
+                return
+
+            # Fetch current prices for all symbols
+            from libs.yahoo_quotes import get_yahoo_quotes
+            yahoo_quotes = get_yahoo_quotes()
+            symbols_to_fetch = list(
+                set([lot['symbol'] for lot in all_long_term_lots]))
+            current_prices = yahoo_quotes.get_quotes(symbols_to_fetch)
+
+            # Calculate current values and gains
+            for lot in all_long_term_lots:
+                current_price_data = current_prices.get(lot['symbol'])
+                current_price = None
+                if current_price_data:
+                    current_price = current_price_data.get('current_price')
+
+                # Use manual price if available, otherwise use current market price
+                price_to_use = lot['manual_price'] or current_price
+                if price_to_use:
+                    lot['current_price'] = price_to_use
+                    lot['current_value'] = lot['shares'] * price_to_use
+                    lot['unrealized_gain'] = lot['current_value'] - \
+                        lot['total_cost']
+                    lot['unrealized_gain_pct'] = (
+                        lot['unrealized_gain'] / lot['total_cost'] * 100) if lot['total_cost'] > 0 else 0
+                    lot['price_source'] = 'manual' if lot['manual_price'] else 'market'
+                else:
+                    lot['current_price'] = None
+                    lot['current_value'] = None
+                    lot['unrealized_gain'] = None
+                    lot['unrealized_gain_pct'] = None
+                    lot['price_source'] = 'unavailable'
+
+            # Display results
+            self._display_tax_harvesting_table(all_long_term_lots, borders)
+
+        except Exception as e:
+            print(f"Error in tax harvesting analysis: {e}")
+
+    def _display_tax_harvesting_table(self, lots: List[Dict], borders: bool = False) -> None:
+        """Display tax harvesting opportunities using Rich tables."""
+        from libs.rich_display import get_rich_display
+
+        # Sort by unrealized gain percentage (descending)
+        lots_with_prices = [
+            lot for lot in lots if lot['current_price'] is not None]
+        lots_without_prices = [
+            lot for lot in lots if lot['current_price'] is None]
+
+        lots_with_prices.sort(
+            key=lambda x: x['unrealized_gain_pct'] or 0, reverse=True)
+        all_lots = lots_with_prices + lots_without_prices
+
+        # Prepare headers and data
+        headers = ['Portfolio', 'Symbol', 'Date', 'Years',
+                   'Shares', 'Cost$', 'Value$', 'Gain$', 'Gain%']
+        data = []
+
+        total_cost = 0
+        total_value = 0
+        total_gain = 0
+
+        for lot in all_lots:
+            portfolio = lot['portfolio'].upper()
+            symbol = lot['symbol']
+            date = lot['purchase_date']
+            years = lot['years_held']  # Keep as float for Rich formatting
+            shares = lot['shares']     # Keep as float for Rich formatting
+            cost = lot['total_cost']   # Keep as float for Rich formatting
+
+            if lot['current_price'] is not None:
+                # Keep as float for Rich formatting
+                value = lot['current_value']
+                # Keep as float for Rich formatting
+                gain = lot['unrealized_gain']
+                # Keep as float for Rich formatting
+                gain_pct = lot['unrealized_gain_pct']
+
+                data.append([portfolio, symbol, date, years,
+                            shares, cost, value, gain, gain_pct])
+
+                total_cost += lot['total_cost']
+                total_value += lot['current_value']
+                total_gain += lot['unrealized_gain']
+            else:
+                data.append([portfolio, symbol, date, years,
+                            shares, cost, None, None, None])
+
+        # Add totals row
+        if total_cost > 0:
+            total_gain_pct = (total_gain / total_cost *
+                              100) if total_cost > 0 else 0
+            totals_row = ['TOTALS', '', '', '', '', total_cost,
+                          total_value, total_gain, total_gain_pct]
+            data.append(totals_row)
+
+        # Get Rich display instance
+        rich_display = get_rich_display()
+
+        # Display the table
+        title = "Tax Harvesting Opportunities - Long-term holdings (1+ years old)"
+        rich_display.display_table(
+            headers, data, bordered=borders, title=title)
+
+        # Display notes
+        print(
+            f"\n{colored('Long-term capital gains (1+ years) qualify for lower tax rates.', 'white')}")
+        print(f"{colored('Consider harvesting losses to offset gains or harvesting gains in low-income years.', 'white')}")
 
 
 def _display_all_portfolios(pl, args, config_loader):
@@ -939,6 +1137,8 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
     # Analysis options
     analysis.add_argument('--tax-analysis', nargs=2, metavar=('PORTFOLIO', 'SYMBOL'),
                           help='Show tax analysis for a portfolio or specific symbol.')
+    analysis.add_argument('--tax-harvesting', action='store_true',
+                          help='Show tax harvesting opportunities (long-term holdings 1+ years old).')
 
     # Data options
     data.add_argument('--live', action='store_true',
@@ -1161,6 +1361,12 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             crud.get_tax_analysis(portfolio, symbol)
             sys.exit(0)
 
+        if args.tax_harvesting:
+            # Initialize CRUD operations
+            crud = PortfolioCRUD()
+            crud.get_tax_harvesting_opportunities(borders=args.borders)
+            sys.exit(0)
+
         # Check if any action was specified
         action_specified = (
             needs_portfolio_loading or
@@ -1173,7 +1379,8 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             args.backup_portfolio is not None or
             args.restore_portfolio is not None or
             args.list_lots is not None or
-            args.tax_analysis is not None
+            args.tax_analysis is not None or
+            args.tax_harvesting
         )
 
         if not action_specified:
