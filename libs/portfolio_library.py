@@ -221,9 +221,12 @@ class PortfolioLibrary:
             cost_label = 'Day$' if self.day_mode else 'Ave$'
             cost_value = quote['open_price'] if self.day_mode else average_cost
 
-            # Format quantities
+            # Format quantities - add asterisk for fractional, remove decimals
             if total_shares.is_integer():
-                total_shares = int(total_shares)
+                total_shares = f"{int(total_shares)}"
+            else:
+                # For fractional quantities, add asterisk and remove decimals
+                total_shares = f"{int(total_shares)}*"
 
             # Create row data
             row = {
@@ -576,3 +579,8 @@ class PortfolioLibrary:
             print("\nUsing cached data. Use --live to force fresh data fetch.")
         else:
             print("\nLive data fetched successfully.")
+
+        # Add notes about manual_price and fractional quantities
+        print(
+            "Note: Use manual_price in --add-lot to suppress warnings for delisted symbols.")
+        print("Note: * indicates fractional quantities (e.g., crypto or ETF shares).")

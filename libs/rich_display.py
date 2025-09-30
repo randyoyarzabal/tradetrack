@@ -93,9 +93,13 @@ class RichDisplay:
                 header = headers[i] if i < len(headers) else ""
 
                 if isinstance(cell, (int, float)):
-                    # Use Rich colors for numeric cells
-                    formatted_cell = self._format_cell_with_rich_color(
-                        cell, header)
+                    # Special handling for VALUE column - color based on Gain$
+                    if header == 'Value' and len(row) > 7:  # Ensure we have Gain$ column
+                        gain_dollars = row[7]  # Gain$ is typically at index 7
+                        formatted_cell = self._format_value_with_rich_gain_color(cell, gain_dollars)
+                    else:
+                        # Use Rich colors for numeric cells
+                        formatted_cell = self._format_cell_with_rich_color(cell, header)
                 else:
                     # Color text cells based on column type
                     cell_str = str(cell) if cell is not None else ""
@@ -152,6 +156,34 @@ class RichDisplay:
                 return default_alignment
 
         return "left"
+
+    def _format_value_with_rich_gain_color(self, value: Union[int, float], gain_dollars: Union[int, float]) -> Text:
+        """
+        Format VALUE column with Rich color based on Gain$ value.
+        
+        Args:
+            value: The VALUE amount
+            gain_dollars: The Gain$ amount to determine color
+            
+        Returns:
+            Rich Text object with appropriate color
+        """
+        # Format the value as currency
+        formatted_text = self.currency_formatter.format_currency(
+            value,
+            rich_mode=True,
+            colored_mode=False  # We'll handle coloring manually
+        )
+        
+        # Create Rich Text with colors based on gain/loss
+        text = Text(formatted_text)
+        if gain_dollars > 0:
+            text.stylize("green")
+        elif gain_dollars < 0:
+            text.stylize("red")
+        # If gain_dollars == 0, use default color
+        
+        return text
 
     def _format_cell_with_rich_color(self, value: Union[int, float], column_type: str) -> Text:
         """
@@ -233,11 +265,22 @@ class RichDisplay:
                 if isinstance(cell, (int, float)):
                     # Use termcolor formatting for numeric cells
                     header = headers[i] if i < len(headers) else ""
-                    formatted_cell = self._format_cell_with_termcolor(
-                        cell, header)
+                    
+                    # Special handling for VALUE column - color based on Gain$
+                    if header == 'Value' and len(row) > 7:  # Ensure we have Gain$ column
+                        gain_dollars = row[7]  # Gain$ is typically at index 7
+                        formatted_cell = self._format_value_with_gain_color(cell, gain_dollars)
+                    else:
+                        formatted_cell = self._format_cell_with_termcolor(cell, header)
                 else:
                     # Plain text for non-numeric cells
                     formatted_cell = str(cell) if cell is not None else ""
+                    
+                    # Colorize symbols (first column) in cyan to match rich display
+                    if i == 0 and cell:  # First column is typically Symbol
+                        from termcolor import colored
+                        formatted_cell = colored(str(cell), 'cyan', force_color=True)
+                    
                 formatted_row.append(formatted_cell)
             formatted_data.append(formatted_row)
 
@@ -266,6 +309,34 @@ class RichDisplay:
         lines = table.split('\n')
         cleaned_lines = [line.rstrip() for line in lines]
         print('\n'.join(cleaned_lines))
+
+    def _format_value_with_gain_color(self, value: Union[int, float], gain_dollars: Union[int, float]) -> str:
+        """
+        Format VALUE column with color based on Gain$ value.
+        
+        Args:
+            value: The VALUE amount
+            gain_dollars: The Gain$ amount to determine color
+            
+        Returns:
+            Formatted string with termcolor
+        """
+        from termcolor import colored
+        
+        # Format the value as currency
+        formatted_value = self.currency_formatter.format_currency(
+            value,
+            rich_mode=False,
+            colored_mode=False  # We'll handle coloring manually
+        )
+        
+        # Color based on gain/loss
+        if gain_dollars > 0:
+            return colored(formatted_value, 'green', force_color=True)
+        elif gain_dollars < 0:
+            return colored(formatted_value, 'red', force_color=True)
+        else:
+            return formatted_value
 
     def _format_cell_with_termcolor(self, value: Union[int, float], column_type: str) -> str:
         """
