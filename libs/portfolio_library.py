@@ -36,6 +36,7 @@ class PortfolioLibrary:
         self.quotes: Dict[str, Dict[str, Any]] = {}
         self.df: Optional[pd.DataFrame] = None
         self.stats: Dict[str, Any] = {}
+        self._show_cache_message = False
 
         # Headers for display
         self.headers = ['Portfolio', 'Symbol', 'Description',
@@ -68,8 +69,8 @@ class PortfolioLibrary:
 
         # Check if we have valid cached data
         if not live_data and self._has_valid_cache(symbols):
-            print("Using cached data. Use --live to force fresh data fetch.")
             self.quotes = self._get_cached_quotes(symbols)
+            self._show_cache_message = True
         else:
             # Determine the reason for live fetch
             if live_data:
@@ -77,12 +78,9 @@ class PortfolioLibrary:
             else:
                 reason = "cache expired"
 
-            # Debug: Show cache status (can be removed in production)
-            # print(f"DEBUG: Cache check - Cache size: {len(self.yahoo_quotes.cache)}, Symbols: {len(symbols)}")
-            # print(f"DEBUG: Cache keys: {list(self.yahoo_quotes.cache.keys())[:5]}...")  # Show first 5 keys
-
             # Show progress spinner for live data fetch
             self._fetch_quotes_with_spinner(symbols, reason)
+            self._show_cache_message = False
 
         # Process data into pandas DataFrame
         self._process_data(filtered_stocks)
@@ -125,52 +123,34 @@ class PortfolioLibrary:
         else:
             message = "Loading data"
 
-        # Check if we can use Rich console
-        try:
-            from rich.console import Console
-            from rich.spinner import Spinner
-            from rich.text import Text
-            
-            console = Console()
-            
-            # Only use Rich if we have a proper terminal
-            if console.is_terminal:
-                # Create spinner
-                with console.status(Spinner("arc", Text(message, style="cyan")), spinner_style="cyan") as status:
-                    # Suppress all output during fetch
-                    with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
-                        self.quotes = self.yahoo_quotes.get_quotes(symbols)
-                return
-        except Exception:
-            pass
-
-        # Fallback: Simple text-based spinner
-        print(f"{message}...", end="", flush=True)
-        
-        # Start spinner in a separate thread
-        spinner_chars = "|/-\\"
+        # Simple text-based spinner that works everywhere
+        spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"  # Braille spinner characters
         spinner_running = True
-        
+        spinner_index = 0
+
         def spinner_worker():
-            i = 0
+            nonlocal spinner_index
             while spinner_running:
-                print(f"\r{message} {spinner_chars[i % len(spinner_chars)]}", end="", flush=True)
+                print(
+                    f"\r{message} {spinner_chars[spinner_index % len(spinner_chars)]}", end="", flush=True, file=sys.stderr)
                 time.sleep(0.1)
-                i += 1
-        
+                spinner_index += 1
+
+        # Start spinner in a separate thread
         spinner_thread = threading.Thread(target=spinner_worker)
         spinner_thread.daemon = True
         spinner_thread.start()
-        
+
         try:
-            # Suppress all output during fetch
-            with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+            # Suppress stdout to hide yfinance output but keep stderr for spinner
+            with redirect_stdout(io.StringIO()):
                 self.quotes = self.yahoo_quotes.get_quotes(symbols)
         finally:
             # Stop spinner
             spinner_running = False
             spinner_thread.join(timeout=0.2)
-            print(f"\r{message} complete!    ", flush=True)
+            # Clear the spinner line completely
+            print(f"\r{' ' * 50}\r", end="", flush=True, file=sys.stderr)
 
     def _filter_stocks(self) -> Dict[str, Dict[str, Any]]:
         """Filter stocks based on current settings."""
@@ -180,7 +160,6 @@ class PortfolioLibrary:
             # Check crypto inclusion
             if not self.include_crypto and self.yahoo_quotes.is_crypto(symbol):
                 continue
-
 
             filtered[symbol] = stock_data
 
@@ -356,6 +335,9 @@ class PortfolioLibrary:
                 width=self.terminal_width
             )
 
+        # Show cache message if applicable
+        self._show_cache_status_message()
+
     def display_all_portfolios(self):
         """Display all portfolios combined."""
         if self.df is None or self.df.empty:
@@ -392,6 +374,9 @@ class PortfolioLibrary:
                 width=self.terminal_width
             )
 
+        # Show cache message if applicable
+        self._show_cache_status_message()
+
     def display_statistics(self):
         """Display portfolio statistics."""
         if not self.stats:
@@ -406,6 +391,9 @@ class PortfolioLibrary:
 
         # Display min/max
         self._display_minmax_table()
+
+        # Show cache message if applicable
+        self._show_cache_status_message()
 
     def _display_totals_table(self):
         """Display totals statistics table."""
@@ -581,3 +569,10 @@ class PortfolioLibrary:
                 return True
 
         return False
+
+    def _show_cache_status_message(self):
+        """Show cache status message at the bottom of display."""
+        if self._show_cache_message:
+            print("\nUsing cached data. Use --live to force fresh data fetch.")
+        else:
+            print("\nLive data fetched successfully.")

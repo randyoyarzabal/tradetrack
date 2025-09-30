@@ -262,7 +262,10 @@ class RichDisplay:
             no_borders=True,
             terminal_width=terminal_width
         )
-        print(table)
+        # Strip trailing spaces from each line
+        lines = table.split('\n')
+        cleaned_lines = [line.rstrip() for line in lines]
+        print('\n'.join(cleaned_lines))
 
     def _format_cell_with_termcolor(self, value: Union[int, float], column_type: str) -> str:
         """
