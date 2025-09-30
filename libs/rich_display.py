@@ -1,0 +1,368 @@
+"""
+Rich table display utilities for the Stock Portfolio Tracker.
+Provides modern table display with borders and columnar options.
+"""
+
+from typing import List, Dict, Any, Optional, Union
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
+from rich.align import Align
+from rich import box
+from columnar import columnar
+from .config_loader import get_config_loader
+from .currency_formatter import get_currency_formatter
+
+
+class RichDisplay:
+    """Handles Rich-based table display with configuration support."""
+
+    def __init__(self):
+        """Initialize the Rich display with configuration."""
+        self.config_loader = get_config_loader()
+        self.table_config = self.config_loader.get_table_config()
+        self.currency_formatter = get_currency_formatter()
+        self.console = Console()
+
+    def create_table(
+        self,
+        headers: List[str],
+        data: List[List[Any]],
+        bordered: bool = False,
+        title: Optional[str] = None
+    ) -> Table:
+        """
+        Create a Rich table with the specified configuration.
+
+        Args:
+            headers: List of column headers
+            data: List of rows, each row is a list of values
+            bordered: Whether to show borders
+            title: Optional table title
+
+        Returns:
+            Rich Table object
+        """
+        # Create table
+        table = Table(title=title, show_header=True,
+                      header_style=self.table_config['header_style'])
+
+        # Configure borders
+        if bordered:
+            border_style = self.table_config['bordered_style']
+            if border_style == "light":
+                table.box = box.ROUNDED
+            elif border_style == "heavy":
+                table.box = box.HEAVY
+            elif border_style == "double":
+                table.box = box.DOUBLE
+            else:
+                table.box = box.ROUNDED
+        else:
+            table.box = box.MINIMAL
+
+        # Add columns
+        for header in headers:
+            # Determine alignment based on content type
+            justify = self._get_column_alignment(header, data)
+            table.add_column(header, justify=justify)
+
+        # Add rows
+        for row in data:
+            # Convert row data to Rich Text objects for proper coloring
+            formatted_row = []
+            for i, cell in enumerate(row):
+                if isinstance(cell, (int, float)):
+                    # Use Rich colors for numeric cells
+                    header = headers[i] if i < len(headers) else ""
+                    formatted_cell = self._format_cell_with_rich_color(
+                        cell, header)
+                else:
+                    # Plain text for non-numeric cells
+                    formatted_cell = str(cell) if cell is not None else ""
+                formatted_row.append(formatted_cell)
+
+            table.add_row(*formatted_row)
+
+        return table
+
+    def _get_column_alignment(self, header: str, data: List[List[Any]]) -> str:
+        """
+        Determine column alignment based on header and data.
+
+        Args:
+            header: Column header
+            data: Table data
+
+        Returns:
+            Alignment string: "left", "right", or "center"
+        """
+        # Default alignment from config
+        default_alignment = self.table_config['number_alignment']
+
+        # Check if this is a numeric column
+        numeric_headers = ['Qty', 'Price', 'Cost',
+                           'Gain$', 'Value', 'Gain%', 'Ave$', 'Day$']
+        if any(numeric in header for numeric in numeric_headers):
+            return default_alignment
+
+        # Check if data in this column is mostly numeric
+        if data:
+            col_index = 0  # This would need to be determined based on header position
+            numeric_count = 0
+            total_count = 0
+
+            for row in data:
+                if col_index < len(row):
+                    cell = row[col_index]
+                    if isinstance(cell, (int, float)):
+                        numeric_count += 1
+                    total_count += 1
+
+            if total_count > 0 and numeric_count / total_count > 0.5:
+                return default_alignment
+
+        return "left"
+
+    def _format_cell_with_rich_color(self, value: Union[int, float], column_type: str) -> Text:
+        """
+        Format a cell with Rich colors based on value and column type.
+
+        Args:
+            value: The numeric value to format
+            column_type: Type of column (e.g., 'Gain$', 'Gain%', 'Value')
+
+        Returns:
+            Rich Text object with appropriate colors
+        """
+        # Format the value as plain text first
+        if 'Gain%' in column_type or '%' in column_type:
+            formatted_text = self.currency_formatter.format_percentage(
+                value, rich_mode=True)
+        elif column_type in ['Cost', 'Gain$', 'Value', 'Ave$', 'Day$', 'Price']:
+            formatted_text = self.currency_formatter.format_currency(
+                value, rich_mode=True)
+        else:
+            formatted_text = self.currency_formatter.format_number(
+                value, rich_mode=True)
+
+        # Create Rich Text with colors
+        text = Text(formatted_text)
+
+        # Apply colors based on value
+        if value < 0:
+            text.stylize("red")
+        elif value > 0 and column_type in ['Gain$', 'Gain%', 'Value']:
+            text.stylize("green")
+
+        return text
+
+    def display_columnar_table(
+        self,
+        headers: List[str],
+        data: List[List[Any]],
+        title: Optional[str] = None,
+        width: Optional[int] = None
+    ):
+        """
+        Display a table using columnar (non-Rich) with termcolor formatting.
+
+        Args:
+            headers: List of column headers
+            data: List of rows
+            title: Optional table title
+            width: Terminal width override
+        """
+        # Format data with termcolor for columnar display
+        formatted_data = []
+        for row in data:
+            formatted_row = []
+            for i, cell in enumerate(row):
+                if isinstance(cell, (int, float)):
+                    # Use termcolor formatting for numeric cells
+                    header = headers[i] if i < len(headers) else ""
+                    formatted_cell = self._format_cell_with_termcolor(
+                        cell, header)
+                else:
+                    # Plain text for non-numeric cells
+                    formatted_cell = str(cell) if cell is not None else ""
+                formatted_row.append(formatted_cell)
+            formatted_data.append(formatted_row)
+
+        # Display using columnar
+        if title:
+            print(title)
+
+        table = columnar(
+            formatted_data,
+            headers=headers,
+            no_borders=True,
+            terminal_width=width or self.console.width
+        )
+        print(table)
+
+    def _format_cell_with_termcolor(self, value: Union[int, float], column_type: str) -> str:
+        """
+        Format a cell with termcolor for columnar display.
+
+        Args:
+            value: The numeric value to format
+            column_type: Type of column (e.g., 'Gain$', 'Gain%', 'Value')
+
+        Returns:
+            Formatted string with termcolor
+        """
+        # Format the value using currency formatter with termcolor
+        if 'Gain%' in column_type or '%' in column_type:
+            return self.currency_formatter.format_percentage(value, rich_mode=False)
+        elif column_type in ['Cost', 'Gain$', 'Value', 'Ave$', 'Day$', 'Price']:
+            return self.currency_formatter.format_currency(value, rich_mode=False)
+        else:
+            return self.currency_formatter.format_number(value, rich_mode=False)
+
+    def _format_numeric_cell(self, value: Union[int, float], header: str) -> str:
+        """
+        Format a numeric cell based on its type and header.
+
+        Args:
+            value: Numeric value to format
+            header: Column header to determine formatting
+
+        Returns:
+            Formatted string
+        """
+        if isinstance(value, float):
+            if 'Gain%' in header or 'Gain' in header and '%' in header:
+                return f"{value:.2f}%"
+            elif 'Qty' in header and value.is_integer():
+                return f"{int(value):,}"
+            else:
+                return f"{value:,.2f}"
+        else:
+            return f"{value:,}"
+
+    def display_table(
+        self,
+        headers: List[str],
+        data: List[List[Any]],
+        bordered: bool = False,
+        title: Optional[str] = None,
+        width: Optional[int] = None
+    ):
+        """
+        Display a table using Rich.
+
+        Args:
+            headers: List of column headers
+            data: List of rows
+            bordered: Whether to show borders
+            title: Optional table title
+            width: Terminal width override
+        """
+        table = self.create_table(headers, data, bordered, title)
+
+        if width:
+            # Create a new console with specific width
+            console = Console(width=width)
+            console.print(table)
+        else:
+            self.console.print(table)
+
+    def display_portfolio_table(
+        self,
+        portfolio_name: str,
+        headers: List[str],
+        data: List[List[Any]],
+        bordered: bool = False,
+        show_totals: bool = True,
+        width: Optional[int] = None
+    ):
+        """
+        Display a portfolio table with proper formatting.
+
+        Args:
+            portfolio_name: Name of the portfolio
+            headers: List of column headers
+            data: List of rows
+            bordered: Whether to show borders
+            show_totals: Whether to show totals row
+            width: Terminal width override
+        """
+        # Create title
+        title = f"Portfolio: {portfolio_name}"
+
+        # Display the table
+        self.display_table(headers, data, bordered, title, width)
+
+    def display_stats_table(
+        self,
+        stats_type: str,
+        headers: List[str],
+        data: List[List[Any]],
+        bordered: bool = False,
+        width: Optional[int] = None
+    ):
+        """
+        Display a statistics table.
+
+        Args:
+            stats_type: Type of statistics (e.g., "Totals", "Averages")
+            headers: List of column headers
+            data: List of rows
+            bordered: Whether to show borders
+            width: Terminal width override
+        """
+        title = f"{stats_type} Statistics"
+        self.display_table(headers, data, bordered, title, width)
+
+    def display_minmax_table(
+        self,
+        headers: List[str],
+        data: List[List[Any]],
+        bordered: bool = False,
+        width: Optional[int] = None
+    ):
+        """
+        Display a min/max statistics table.
+
+        Args:
+            headers: List of column headers
+            data: List of rows
+            bordered: Whether to show borders
+            width: Terminal width override
+        """
+        title = "Min/Max Statistics"
+        self.display_table(headers, data, bordered, title, width)
+
+
+# Global Rich display instance
+_rich_display: Optional[RichDisplay] = None
+
+
+def get_rich_display() -> RichDisplay:
+    """Get the global Rich display instance."""
+    global _rich_display
+    if _rich_display is None:
+        _rich_display = RichDisplay()
+    return _rich_display
+
+
+def display_table(headers: List[str], data: List[List[Any]], **kwargs):
+    """Display a table using the global Rich display instance."""
+    get_rich_display().display_table(headers, data, **kwargs)
+
+
+def display_portfolio_table(portfolio_name: str, headers: List[str], data: List[List[Any]], **kwargs):
+    """Display a portfolio table using the global Rich display instance."""
+    get_rich_display().display_portfolio_table(
+        portfolio_name, headers, data, **kwargs)
+
+
+def display_stats_table(stats_type: str, headers: List[str], data: List[List[Any]], **kwargs):
+    """Display a statistics table using the global Rich display instance."""
+    get_rich_display().display_stats_table(stats_type, headers, data, **kwargs)
+
+
+def display_minmax_table(headers: List[str], data: List[List[Any]], **kwargs):
+    """Display a min/max table using the global Rich display instance."""
+    get_rich_display().display_minmax_table(headers, data, **kwargs)

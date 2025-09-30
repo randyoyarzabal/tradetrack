@@ -1,696 +1,461 @@
-import re
-import traceback
-from termcolor import colored
-import locale
-import finnhub
-import fnmatch
-import pandas as pd
-from dotenv import load_dotenv
-from td.client import TDClient
-from td.exceptions import TknExpError, ForbidError
-from columnar import columnar
-from .authentication import TDAuthenticationDriver
-from .utilities import *
+"""
+Modern Portfolio Library for the Stock Portfolio Tracker.
+Integrates YAML portfolios, Yahoo Finance API, Rich display, and currency formatting.
+"""
 
-DJI = '$DJI'
-COMPX = '$COMPX'
-SPY = '$SPX.X'
-locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
+import pandas as pd
+from typing import Dict, List, Any, Optional, Tuple
+from .config_loader import get_config_loader
+from .portfolio_loader import get_portfolio_loader
+from .yahoo_quotes import get_yahoo_quotes
+from .rich_display import get_rich_display
+from .currency_formatter import get_currency_formatter
 
 
 class PortfolioLibrary:
-    def __init__(self, debug=False):
-        load_dotenv()
-        self.debug = debug
+    """Modern portfolio management with YAML, Yahoo Finance, and Rich display."""
+
+    def __init__(self):
+        """Initialize the portfolio library."""
+        self.config_loader = get_config_loader()
+        self.portfolio_loader = get_portfolio_loader()
+        self.yahoo_quotes = get_yahoo_quotes()
+        self.rich_display = get_rich_display()
+        self.currency_formatter = get_currency_formatter()
+
+        # Display settings
         self.borders = False
-        self.cache = False
-        self.day = False
-        self.totals = True
-        self.df = None  # Pandas dataframe for all stocks
-        self.t_width = 120
-        self.stats = {}  # Various stock stats calculated
-        self.cost_label = ''  # Ave$ or Day$
-        self.headers = []
-        self.print_data = []  # List of rows for console (colored) purposes
-        self.calc_data = []  # List of rows for calculation (raw) purposes
-        self.config = get_config()
-        self.finnhub_client = None
-        # ToDo: Check if API key is defined.
-        self.api_key = self.config['FINNHUB']['API_KEY']
-        self.finnhub_client = finnhub.Client(api_key=self.api_key)
-        self.td_driver = TDAuthenticationDriver(self.debug)
-        self.portfolios = {}
-        self.td = None
-        self.td_roth = None
-        self.no_crypto = True
-        self.no_unvested = True
+        self.show_totals = True
+        self.include_crypto = False
+        self.include_unvested = False
+        self.terminal_width = self.config_loader.get_terminal_width()
+        self.day_mode = False
 
-        self.td_client = TDClient(
-            client_id=self.td_driver.client_id,
-            redirect_uri=self.td_driver.redirect_uri,
-            credentials_path=os.getenv('CREDENTIAL_CACHE_FILE')
-        )
+        # Data storage
+        self.portfolios: Dict[str, Dict[str, Any]] = {}
+        self.all_stocks: Dict[str, Dict[str, Any]] = {}
+        self.quotes: Dict[str, Dict[str, Any]] = {}
+        self.df: Optional[pd.DataFrame] = None
+        self.stats: Dict[str, Any] = {}
 
-        # Purposely make an API call and ignore errors.  Subsequent calls should work.
-        try:
-            with HiddenPrints(not debug):
-                self.td_client.get_quotes(instruments=['AAPL'])  # A test API call to induce error/re-auth if needed.
-        # except TknExpError:
-        #     pass
-        except ConnectionError as ce:
-            print("Unable to make a connection TD Ameritrade API.  Exiting with errors:")
-            print(ce)
-            exit(1)
+        # Headers for display
+        self.headers = ['Portfolio', 'Symbol', 'Description',
+                        'Qty', 'Ave$', 'Price', 'Gain%', 'Cost', 'Gain$', 'Value']
 
-        self.read_portfolios()
+    def load_portfolios(self, live_data=False):
+        """Load all portfolios and prepare data."""
+        self.portfolios = self.portfolio_loader.load_portfolios()
+        self.all_stocks = self.portfolio_loader.get_all_stocks()
 
-    def authenticate(self, force=False):
-        self.td_driver.debug = self.debug
-        if not self.td_driver.verify_ssl_reqs():
-            exit(1)
-        self.td_driver.authenticate(force=force)
+        # Filter stocks based on settings
+        filtered_stocks = self._filter_stocks()
 
-    def print_portfolio(self, pname, silent=False):
-        portfolio = self.portfolios[pname]
-        if 'ACCOUNT' in portfolio:
-            self.get_positions(pname, account=portfolio['ACCOUNT'], silent=silent)
+        # Get quotes for all symbols
+        symbols = list(filtered_stocks.keys())
+        
+        # Check if we have valid cached data
+        if not live_data and self._has_valid_cache(symbols):
+            print("Using cached data. Use --live to force fresh data fetch.")
+            self.quotes = self._get_cached_quotes(symbols)
         else:
-            self.get_positions(pname, portfolio=portfolio['HOLDINGS'], crypto=(pname == 'CRYPTO'), silent=silent)
-
-    def print_stats(self, print_stats=True, print_stocks=False):
-        if print_stats:
-            self.print_ttable('Totals')
-            self.print_ttable('Averages')
-            self.print_mtable()
-
-        if print_stocks:
-            data = sorted(self.print_data, key=lambda x: x[0])
-            if self.totals:
-                # Generate totals here
-                totals = ['', '', '', '', '', '', 'TOTAL',
-                          self.num_fmt(self.stats['Totals']['Cost'], color=False),
-                          self.num_fmt(self.stats['Totals']['Gain$']),
-                          self.num_fmt(self.stats['Totals']['Value'],
-                                       t_num=(self.stats['Totals']['Value'] - self.stats['Totals']['Cost']))]
-                data.append(totals)
-
-            print('All Portfolios (Ave. Gain%: {})'.format(self.num_fmt(self.stats['Averages']['Gain%'], percent=True)))
-            print(columnar(data,
-                           headers=self.headers,
-                           no_borders=(not self.borders),
-                           terminal_width=self.t_width
-                           )
-                  )
-
-    def print_ttable(self, action):
-        if action == 'Totals':
-            t_header = ['', 'Cost', 'Gain$', 'Value']
-        else:
-            t_header = ['', 'Gain%', 'Cost', 'Gain$', 'Value']
-
-        t_data = []
-        row = [action]
-        for c in t_header:
-            if c == '':
-                continue
-            num_val = float(self.stats[action][c])
-            if c == 'Gain%':
-                if action == 'Totals':
-                    continue
-                num_val = self.num_fmt(num_val, percent=True)
-            if c == 'Cost':
-                num_val = self.num_fmt(num_val, color=False)
-            if c == 'Gain$':
-                num_val = self.num_fmt(num_val)
-            if c == 'Value':
-                num_val = self.num_fmt(num_val)
-            row.append(num_val)
-        t_data.append(row)
-
-        print(columnar(t_data,
-                       headers=t_header,
-                       no_borders=(not self.borders),
-                       terminal_width=self.t_width
-                       )
-              )
-
-    def print_mtable(self):
-        max_header = ['', 'Min', 'Symbol', 'Portfolio', '', 'Max', 'Symbol', 'Portfolio']
-        m_cols = ['Qty', self.cost_label, 'Gain%', 'Cost', 'Gain$', 'Value']
-        data = []
-        for c in m_cols:
-            row = ['', '', '', '', '', '', '', '']
-            for action in ('Min', 'Max'):
-                s_str = '{} {}'.format(action, c)
-                num_val = float(self.stats[s_str][2])
-                symbol = self.stats[s_str][1]
-                portfolio = self.stats[s_str][0]
-                if c == 'Qty':
-                    if num_val.is_integer():
-                        num_val = int(num_val)
-                if c == self.cost_label:
-                    num_val = self.num_fmt(num_val, color=False)
-                if c == 'Gain%':
-                    num_val = self.num_fmt(num_val, percent=True)
-                if c == 'Cost':
-                    num_val = self.num_fmt(num_val, color=False)
-                if c == 'Gain$':
-                    num_val = self.num_fmt(num_val)
-                if c == 'Value':
-                    # Make an a query on the pandas df looking for a particular row
-                    row_val = self.df.query("Portfolio=='{}' and Symbol=='{}'".format(portfolio, symbol))
-                    total_cost = row_val.at[row_val.index[0], 'Cost']
-                    total_value = row_val.at[row_val.index[0], 'Value']
-                    # Or
-                    # total_cost = row_val.iloc[0]["Cost"]
-                    # total_value = row_val.iloc[0]["Value"]
-                    num_val = self.num_fmt(num_val, t_num=(total_value - total_cost))
-                if action == "Min":
-                    row[0] = c
-                    row[1] = num_val
-                    row[2] = symbol
-                    row[3] = portfolio
-                else:
-                    row[4] = ''
-                    row[5] = num_val
-                    row[6] = symbol
-                    row[7] = portfolio
-            data.append(row)
-        print(columnar(data,
-                       headers=max_header,
-                       no_borders=(not self.borders),
-                       terminal_width=self.t_width
-                       )
-              )
-
-    def get_xval(self, col_name, max=True):
-        # Returns [0] = Portfolio, [1] = Symbol, [2] = Value
-        col = self.df[col_name]
-        if max:
-            x_idx = col.idxmax()
-        else:
-            x_idx = col.idxmin()
-        return self.df.loc[x_idx, 'Portfolio'], self.df.loc[x_idx, 'Symbol'], self.df.loc[x_idx, col_name]
-
-    def get_portfolio_names(self):
-        return sorted(self.portfolios.keys())
-
-    def read_portfolios(self):
-        directory = os.getenv('PORTFOLIOS_PATH')
-        for filename in os.listdir(directory):
-            if filename.endswith(".json"):
-                portfolio = os.path.join(directory, filename)
-                try:
-                    with open(portfolio, "r") as portfolio_fh:
-                        file_dict = json.load(portfolio_fh)
-                        self.portfolios[file_dict['NAME']] = file_dict
-                        if file_dict['NAME'] == 'TD':
-                            self.td = file_dict['ACCOUNT']
-
-                        if file_dict['NAME'] == 'TD_ROTH':
-                            self.td_roth = file_dict['ACCOUNT']
-
-                except Exception as e:
-                    raise e
+            if live_data:
+                print("Fetching live data...")
             else:
-                continue
+                print("No valid cache found, fetching live data...")
+            self.quotes = self.yahoo_quotes.get_quotes(symbols)
 
-    def load_portfolios(self):
-        for portfolio in self.get_portfolio_names():
-            if self.no_crypto and portfolio == 'CRYPTO':
-                continue
-            if self.no_unvested and 'UNVESTED' in portfolio:
-                continue        
-            try:
-                self.print_portfolio(portfolio, silent=True)
-            except TypeError:
-                print ('ERROR: Authentication expired? Try reauthenticating: "$> stocks.py --auth -f"')
-                exit()
-            except ForbidError:
-                print ('WARNING: No access to account: "{}". Remove from portfolio list to suppress this message.'.format(portfolio))
+        # Process data into pandas DataFrame
+        self._process_data(filtered_stocks)
 
-        # Process data as pandas dataframe
-        data = sorted(self.calc_data, key=lambda x: x[0])
-        pd.set_option("display.max_rows", None, "display.max_columns", None)
-        self.df = pd.DataFrame(data, columns=self.headers)
+        # Calculate statistics
+        self._calculate_statistics()
 
-        if self.day:
-            self.cost_label = 'Day$'
-        else:
-            self.cost_label = 'Ave$'
+    def _has_valid_cache(self, symbols: List[str]) -> bool:
+        """Check if we have valid cached data for all symbols."""
+        for symbol in symbols:
+            if not self.yahoo_quotes._is_cache_valid(symbol):
+                return False
+        return len(symbols) > 0
 
-        # Pre-calculate statistics
-        self.stats = {
-            "Totals": self.df.sum(),
-            "Averages": self.df.mean(numeric_only=True),
-            "Min Value": self.get_xval('Value', max=False),
-            "Min Gain$": self.get_xval('Gain$', max=False),
-            "Min Gain%": self.get_xval('Gain%', max=False),
-            "Min Cost": self.get_xval('Cost', max=False),
-            "Min Qty": self.get_xval('Qty', max=False),
-            f"Min {self.cost_label}": self.get_xval(f'{self.cost_label}', max=False),
-
-            "Max Gain%": self.get_xval('Gain%'),
-            "Max Gain$": self.get_xval('Gain$'),
-            "Max Value": self.get_xval('Value'),
-            "Max Cost": self.get_xval('Cost'),
-            "Max Qty": self.get_xval('Qty'),
-            f"Max {self.cost_label}": self.get_xval(f'{self.cost_label}'),
-        }
-
-    def create_order(self, symbol, order_type, price_type='MARKET', quantity=0, price=0):
-        order_type = order_type.upper()
-        price_type = price_type.upper()
-        if price_type == 'LIMIT' and price == 0:
-            raise ValueError("Limit orders require price value.")
-        limit_order = {
-            "orderType": "LIMIT",
-            "session": "NORMAL",
-            "duration": "DAY",
-            "price": price,
-            "orderStrategyType": "SINGLE",
-            "orderLegCollection": [
-                {
-                    "instruction": order_type,
-                    "quantity": quantity,
-                    "instrument": {
-                        "symbol": symbol,
-                        "assetType": "EQUITY"
-                    }
-                }
-            ]
-        }
-        market_order = {
-            "orderType": "MARKET",
-            "session": "NORMAL",
-            "duration": "DAY",
-            "orderStrategyType": "SINGLE",
-            "orderLegCollection": [
-                {
-                    "instruction": order_type,
-                    "quantity": quantity,
-                    "instrument": {
-                        "symbol": symbol,
-                        "assetType": "EQUITY"
-                    }
-                }
-            ]
-        }
-        if price_type == 'MARKET':
-            order = market_order
-        else:
-            order = limit_order
-        return order
-
-    def get_vol(self, tvol):
-        if tvol >= 1000000:
-            tvol = int(tvol / 1000000)
-            tvol_str = '{}M'.format(tvol)
-        elif tvol >= 1000:
-            tvol = int(tvol / 1000)
-            tvol_str = '{}K'.format(tvol)
-        else:
-            tvol_str = '{}'.format(tvol)
-        return tvol_str
-
-    @staticmethod
-    def get_desc(d_str):
-        exclude_words = (
-            'Class A',
-            'Common Stock',
-            'Ordinary Shares',
-            'Common Shares',
-            'Acquisition',
-            'Consumer Discretionary',
-            'Aberdeen Standard Physical',
-            'Group',
-            'Capital',
-            'Entertainment',
-            '-',
-            'abrdn',
-            'Status Alert: Deficient',
-            'and Delinquent',
-            'AMC Preferred Equity Units, each constituting a',
-            'TR ETH Common units of fractional undivided beneficial intere',
-            'and Future Mobility Index',
-            'Basket Shares',
-        )
-
-        title_words = (
-            'INVESCO',
-            'GRAYSCALE',
-            'ETHEREUM',
-        )
-
-        # Strip excluded words
-        for word in exclude_words:
-            if word in d_str:
-                d_str = d_str.replace(word, '')
-
-        # Replace Corporation with "Corp."
-        word = 'Corporation'
-        if word in d_str:
-            d_str = d_str.replace(word, 'Corp.')
-
-        # Titlecase words
-        if any(substr in d_str for substr in title_words):
-            d_str = d_str.title()
-
-        # Remove all test starting with "American D*"
-        d_str = re.sub(r'(.*)American [Dd].*', r'\1', d_str)
-        d_str = ' '.join(d_str.split())  # Smash multi-spaces to one.
-        d_str = d_str.replace('. ,', '.')
-        d_str = d_str.replace(' ,', ',')
-        d_str = d_str.strip()
-        return d_str
-
-    @staticmethod
-    def get_change(change):
-        return "{:.2f}".format(float(change) * 100)
-
-    def get_movers(self, index=DJI, direction='up', change='percent'):
-        data = []
-        movers = self.td_client.get_movers(index, direction, change)
-        for item in movers:
-            # Clean fields
-            desc = self.get_desc(item['description'])
-            change = self.get_change(item['change'])
-            vol = self.get_vol(item['totalVolume'])
-
-            row = [item['symbol'], desc, item['last'], change, vol]
-            data.append(row)
-        table = columnar(data, headers=['Symbol', 'Description', 'Price', 'Change %', 'Vol'], no_borders=True, terminal_width=self.t_width)
-        print(table)
-
-    def __process_watch_list(self, wlist):
-        print(wlist['name'])
-        tickers = []
-        data = []
-        for x in wlist['watchlistItems']:
-            ticker = x['instrument']['symbol']
-            tickers.append(ticker)
-
-        quotes = self.td_client.get_quotes(instruments=tickers)
-
-        for ticker in quotes:
-            stock = quotes[ticker]
-            tvol_str = self.get_vol(stock['totalVolume'])
-            row = [ticker, self.get_desc(stock['description']), stock['lastPrice'], stock['netChange'], tvol_str,
-                   stock['exchangeName']]
-            data.append(row)
-
-        table = columnar(data, headers=['Symbol', 'Description', 'Price', 'Day Chg$', 'Vol', 'Exchange'],
-                         no_borders=True, terminal_width=self.t_width)
-        print(table)
-
-    def get_watch_list(self, list_name=None):
-        watch_lists = self.td_client.get_watchlist_accounts()
-        for watch_list in watch_lists:
-            if list_name:
-                if list_name == watch_list['name']:
-                    self.__process_watch_list(watch_list)
-                    break
-                # Ignore the rest of the watch lisself.td_client.
-            else:
-                self.__process_watch_list(watch_list)
-
-    def jprint(self, j_obj):
-        print(json.dumps(j_obj, indent=4))
-
-    def get_gain(self, qty, cost, price, percent=False):
-        gain = 0
-        pl = price - cost  # gain/loss
-        if percent:
-            if cost != 0:  # For some reason, every now and then, some tickers have 0 cost.
-                gd = pl / cost  # gain in decimal
-                gain = '{0:.2f}'.format(100 * gd)
-            else:
-                if not self.day:
-                    # If a stock didn't cost us anything, it's 100% gain. 
-                    #  i.e. rewards, promotions.
-                    gain = '{0:.2f}'.format(100)
-        else:
-            # In dollars
-            gain = '{0:.2f}'.format(pl * qty)
-
-        return float(gain)
-
-    def num_fmt(self, num, t_num=None, color=True, symbol=True, percent=False, nround=True):
-        # Determine test number
-        if t_num:
-            x = t_num
-        else:
-            x = num
-        c_str = num
-        text_color = 'none'
-
-        if x < 0 and color:
-            c_str = abs(c_str)
-            text_color = 'red'
-        elif x > 0:
-            text_color = 'green'
-
-        # Round or pad with zero decimals if necessary
-        c_str = self.pad_float(c_str, nround)
-
-        if symbol:
-            if percent:
-                c_str = '{}%'.format(c_str)
-            else:
-                c_str = '${}'.format(c_str)
-        if text_color != 'none' and color:
-            c_str = colored(c_str, text_color)
-        return c_str
-
-    def get_quotes(self, name, tickers, portfolio, crypto):
-        # Artificially create dict of quotes as if it is a result of API call
+    def _get_cached_quotes(self, symbols: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Get cached quotes for symbols."""
         quotes = {}
-        td_quotes = self.td_client.get_quotes(instruments=tickers.keys())
-        for ticker in tickers:
-            ticker_data = None
-            if not portfolio:
-                ticker_data = {
-                    'description': td_quotes[ticker]['description'],
-                    'longQuantity': tickers[ticker]['longQuantity'],
-                    'averagePrice': tickers[ticker]['averagePrice'],
-                    'openPrice': td_quotes[ticker]['openPrice'],
-                    'lastPrice': td_quotes[ticker]['lastPrice'],
-                }
-            else:
-                if crypto:
-                    ticker_data = {
-                        'description': tickers[ticker][0],
-                        'longQuantity': float(tickers[ticker][1]),
-                        'averagePrice': tickers[ticker][2],
-                        # Use finnhub for Bitcoin quotes.
-                        'openPrice': self.finnhub_client.quote(ticker)['o'],
-                        'lastPrice': self.finnhub_client.quote(ticker)['c']
-                    }
-                else:
-                    if ticker in td_quotes:
-                        ticker_data = {
-                            'description': td_quotes[ticker]['description'],
-                            'longQuantity': float(tickers[ticker][0]),
-                            'averagePrice': tickers[ticker][1],
-                            'openPrice': td_quotes[ticker]['openPrice'],
-                            'lastPrice': td_quotes[ticker]['lastPrice'],
-                        }
-                    else:
-                        print('WARNING: Stock ticker "{}" not found in {}. Remove from portfolio to suppress this message.'.format(ticker, name))
-            if ticker_data:
-                quotes[ticker] = ticker_data     
+        for symbol in symbols:
+            if symbol in self.yahoo_quotes.cache:
+                quotes[symbol] = self.yahoo_quotes.cache[symbol]
         return quotes
 
-    def pad_float(self, num, nround=False):
-        # This is string hack to ensure that numbers always have at least 2 decimal places
-        # when printed. Normally to check number of decimal places, one can simply:
-        # x = 54.4
-        # y = number - int(number)
-        # y should give us the fractional part: .4, but for some reason it is giving '0.3999999999999986'
-        # This complicates things, the below, ensures the behavior we want.
-        if nround:
-            c_str = '{:,.2f}'.format(num)
-        else:
-            c_str = str(num)
-            if '.' in c_str:
-                dec = c_str.split('.')[1]
-                if len(dec) < 2:  # Are there 2 decimal places?
-                    c_str = '{:,.2f}'.format(float(c_str))
-                else:
-                    c_str = '{:,}'.format(float(c_str))
-            else:
-                c_str = '{:,.2f}'.format(float(c_str))
-        return c_str
+    def _filter_stocks(self) -> Dict[str, Dict[str, Any]]:
+        """Filter stocks based on current settings."""
+        filtered = {}
 
-    def get_positions(self, name, account=None, portfolio=None, crypto=False, silent=False):
-        tickers = {}
-        data = []
-        if not portfolio:
-            data_dict = self.td_client.get_accounts(account=account, fields=['positions'])
-            if 'positions' in data_dict['securitiesAccount']:  # Possibly empty account
-                positions = data_dict['securitiesAccount']['positions']
-                for x in positions:
-                    ticker = x['instrument']['symbol']
-                    tickers[ticker] = x  # Convert list to dict of dicts w/ ticker as the key
-        else:
-            for x in portfolio:
-                tickers[x] = portfolio[x]  # Convert list to dict of dicts w/ ticker as the key
-
-        quotes = self.get_quotes(name, tickers, portfolio, crypto)
-
-        total_gain_p = 0
-        total_cost = 0
-        total_gain_d = 0
-        ave_gain_p = 0
-        total_value = 0
-
-        count = 0
-        label = ''
-        for ticker in sorted(quotes):
-            if ticker == 'MMDA1':
+        for symbol, stock_data in self.all_stocks.items():
+            # Check crypto inclusion
+            if not self.include_crypto and self.yahoo_quotes.is_crypto(symbol):
                 continue
-            count += 1
-            stock = quotes[ticker]
-            qty = stock['longQuantity']
 
-            if self.day:
-                label = 'Day$'
-                cost = stock['openPrice']
-            else:
-                label = 'Ave$'
-                cost = stock['averagePrice']
+            # Check unvested inclusion (you can add logic here for unvested stocks)
+            if not self.include_unvested and 'UNVESTED' in stock_data.get('portfolio', ''):
+                continue
 
-            price = stock['lastPrice']
+            filtered[symbol] = stock_data
 
-            # Sometimes, there isn't a price for a crypto, if this is the case
-            #  use a user-defined price, 4th field in the portfolio (if defined)
-            if crypto:
-                # Check if the quote is 0
-                if price == 0:
-                    # Is there a user-defined quote, use it.
-                    if len(portfolio[ticker]) == 4:
-                        print("WARNING: Price $0 found for {}, using user-defined price: {}.".format(ticker, portfolio[ticker][3]))
-                        price = portfolio[ticker][3]
-                        cost = price # Since the price is 0, assume cost is the same.
-                    else:
-                        print("WARNING: Price $0 found for {} and no default price found. Define a 4th field in the portfolio file to supress this message.".format(ticker))
+        return filtered
 
-            desc = self.get_desc(stock['description'])
+    def _process_data(self, stocks: Dict[str, Dict[str, Any]]):
+        """Process stock data into pandas DataFrame."""
+        rows = []
 
-            gain_d = self.get_gain(qty, cost, price)
-            gain_p = self.get_gain(qty, cost, price, percent=True)
-            t_cost = (qty * cost)
-            m_value = (qty * price)
+        for symbol, stock_data in stocks.items():
+            if symbol not in self.quotes:
+                continue
 
-            # Some portfolios support fractional shares, don't cast
-            if qty.is_integer():
-                qty = int(qty)
+            quote = self.quotes[symbol]
+            portfolio = stock_data['portfolio']
+            description = stock_data['description']
 
-            print_row = [
-                name,
-                ticker,
-                desc,
-                qty,
-                self.num_fmt(cost, color=False, nround=False),
-                self.num_fmt(price, color=False, nround=False),
-                self.num_fmt(gain_p, percent=True),
-                self.num_fmt(t_cost, color=False),
-                self.num_fmt(gain_d),
-                self.num_fmt(m_value, gain_p),
+            # Calculate totals across all lots
+            total_shares = sum(lot['shares'] for lot in stock_data['lots'])
+            total_cost = sum(lot['shares'] * lot['cost_basis']
+                             for lot in stock_data['lots'])
+            average_cost = total_cost / total_shares if total_shares > 0 else 0
+
+            # Get current price
+            current_price = quote['current_price']
+
+            # Use manual price if available and current price is 0
+            if current_price == 0 and stock_data['lots']:
+                manual_prices = [lot.get(
+                    'manual_price') for lot in stock_data['lots'] if lot.get('manual_price')]
+                if manual_prices:
+                    # Use the most recent manual price
+                    current_price = manual_prices[-1]
+
+            # Calculate gains
+            total_value = total_shares * current_price
+            gain_dollars = total_value - total_cost
+            gain_percent = (gain_dollars / total_cost *
+                            100) if total_cost > 0 else 0
+
+            # Determine cost label
+            cost_label = 'Day$' if self.day_mode else 'Ave$'
+            cost_value = quote['open_price'] if self.day_mode else average_cost
+
+            # Format quantities
+            if total_shares.is_integer():
+                total_shares = int(total_shares)
+
+            # Create row data
+            row = {
+                'Portfolio': portfolio,
+                'Symbol': symbol,
+                'Description': description,
+                'Qty': total_shares,
+                cost_label: cost_value,
+                'Price': current_price,
+                'Gain%': gain_percent,
+                'Cost': total_cost,
+                'Gain$': gain_dollars,
+                'Value': total_value
+            }
+
+            rows.append(row)
+
+        # Create DataFrame
+        self.df = pd.DataFrame(rows)
+
+        # Update headers
+        self.headers = ['Portfolio', 'Symbol', 'Description', 'Qty',
+                        'Day$' if self.day_mode else 'Ave$', 'Price', 'Gain%', 'Cost', 'Gain$', 'Value']
+
+    def _calculate_statistics(self):
+        """Calculate portfolio statistics."""
+        if self.df is None or self.df.empty:
+            self.stats = {}
+            return
+
+        # Calculate totals
+        totals = {
+            'Cost': self.df['Cost'].sum(),
+            'Gain$': self.df['Gain$'].sum(),
+            'Value': self.df['Value'].sum(),
+            'Gain%': (self.df['Gain$'].sum() / self.df['Cost'].sum() * 100) if self.df['Cost'].sum() > 0 else 0
+        }
+
+        # Calculate averages
+        averages = {
+            'Gain%': self.df['Gain%'].mean(),
+            'Cost': self.df['Cost'].mean(),
+            'Gain$': self.df['Gain$'].mean(),
+            'Value': self.df['Value'].mean()
+        }
+
+        # Find min/max values
+        min_max = {}
+        for column in ['Value', 'Gain$', 'Gain%', 'Cost', 'Qty']:
+            if column in self.df.columns:
+                min_idx = self.df[column].idxmin()
+                max_idx = self.df[column].idxmax()
+
+                min_max[f'Min {column}'] = (
+                    self.df.loc[min_idx, 'Portfolio'],
+                    self.df.loc[min_idx, 'Symbol'],
+                    self.df.loc[min_idx, column]
+                )
+                min_max[f'Max {column}'] = (
+                    self.df.loc[max_idx, 'Portfolio'],
+                    self.df.loc[max_idx, 'Symbol'],
+                    self.df.loc[max_idx, column]
+                )
+
+        self.stats = {
+            'Totals': totals,
+            'Averages': averages,
+            **min_max
+        }
+
+    def display_portfolio(self, portfolio_name: str):
+        """Display a specific portfolio."""
+        if portfolio_name not in self.portfolios:
+            print(f"Portfolio '{portfolio_name}' not found")
+            return
+
+        # Filter data for this portfolio
+        portfolio_data = self.df[self.df['Portfolio'] ==
+                                 portfolio_name] if self.df is not None else pd.DataFrame()
+
+        if portfolio_data.empty:
+            print(f"No data found for portfolio '{portfolio_name}'")
+            return
+
+        # Convert to display format
+        display_data = self._format_display_data(portfolio_data)
+
+        # Add totals row if enabled
+        if self.show_totals:
+            totals_row = self._create_totals_row(portfolio_data)
+            display_data.append(totals_row)
+
+        # Display the table using appropriate method
+        if self.borders:
+            # Use Rich table with borders
+            self.rich_display.display_portfolio_table(
+                portfolio_name=portfolio_name,
+                headers=self.headers[1:],  # Remove Portfolio column
+                data=display_data,
+                bordered=True,
+                width=self.terminal_width
+            )
+        else:
+            # Use columnar table without borders
+            self.rich_display.display_columnar_table(
+                headers=self.headers[1:],  # Remove Portfolio column
+                data=display_data,
+                title=f"Portfolio: {portfolio_name}",
+                width=self.terminal_width
+            )
+
+    def display_all_portfolios(self):
+        """Display all portfolios combined."""
+        if self.df is None or self.df.empty:
+            print("No portfolio data available")
+            return
+
+        # Sort by symbol
+        sorted_data = self.df.sort_values('Symbol')
+
+        # Convert to display format
+        display_data = self._format_display_data(sorted_data)
+
+        # Add totals row if enabled
+        if self.show_totals:
+            totals_row = self._create_totals_row(self.df)
+            display_data.append(totals_row)
+
+        # Display the table using appropriate method
+        if self.borders:
+            # Use Rich table with borders
+            self.rich_display.display_table(
+                headers=self.headers,
+                data=display_data,
+                bordered=True,
+                title="All Portfolios",
+                width=self.terminal_width
+            )
+        else:
+            # Use columnar table without borders
+            self.rich_display.display_columnar_table(
+                headers=self.headers,
+                data=display_data,
+                title="All Portfolios",
+                width=self.terminal_width
+            )
+
+    def display_statistics(self):
+        """Display portfolio statistics."""
+        if not self.stats:
+            print("No statistics available")
+            return
+
+        # Display totals
+        self._display_totals_table()
+
+        # Display averages
+        self._display_averages_table()
+
+        # Display min/max
+        self._display_minmax_table()
+
+    def _display_totals_table(self):
+        """Display totals statistics table."""
+        totals = self.stats['Totals']
+
+        headers = ['', 'Cost', 'Gain$', 'Value']
+        data = [['TOTAL',
+                totals['Cost'],  # Pass raw value for Rich coloring
+                totals['Gain$'],
+                totals['Value']]]
+
+        if self.borders:
+            self.rich_display.display_stats_table(
+                stats_type="Totals",
+                headers=headers,
+                data=data,
+                bordered=True,
+                width=self.terminal_width
+            )
+        else:
+            self.rich_display.display_columnar_table(
+                headers=headers,
+                data=data,
+                title="Totals Statistics",
+                width=self.terminal_width
+            )
+
+    def _display_averages_table(self):
+        """Display averages statistics table."""
+        averages = self.stats['Averages']
+
+        headers = ['', 'Gain%', 'Cost', 'Gain$', 'Value']
+        data = [['AVERAGE',
+                averages['Gain%'],  # Pass raw value for Rich coloring
+                averages['Cost'],
+                averages['Gain$'],
+                averages['Value']]]
+
+        if self.borders:
+            self.rich_display.display_stats_table(
+                stats_type="Averages",
+                headers=headers,
+                data=data,
+                bordered=True,
+                width=self.terminal_width
+            )
+        else:
+            self.rich_display.display_columnar_table(
+                headers=headers,
+                data=data,
+                title="Averages Statistics",
+                width=self.terminal_width
+            )
+
+    def _display_minmax_table(self):
+        """Display min/max statistics table."""
+        headers = ['', 'Min', 'Symbol', 'Portfolio',
+                   '', 'Max', 'Symbol', 'Portfolio']
+        data = []
+
+        columns = ['Qty', 'Ave$' if not self.day_mode else 'Day$',
+                   'Gain%', 'Cost', 'Gain$', 'Value']
+
+        for col in columns:
+            if col in self.df.columns:
+                min_key = f'Min {col}'
+                max_key = f'Max {col}'
+
+                if min_key in self.stats and max_key in self.stats:
+                    min_data = self.stats[min_key]
+                    max_data = self.stats[max_key]
+
+                    # Pass raw values for Rich coloring
+                    min_value = min_data[2]
+                    max_value = max_data[2]
+
+                    row = [col, min_value, min_data[1], min_data[0],
+                           '', max_value, max_data[1], max_data[0]]
+                    data.append(row)
+
+        if self.borders:
+            self.rich_display.display_minmax_table(
+                headers=headers,
+                data=data,
+                bordered=True,
+                width=self.terminal_width
+            )
+        else:
+            self.rich_display.display_columnar_table(
+                headers=headers,
+                data=data,
+                title="Min/Max Statistics",
+                width=self.terminal_width
+            )
+
+    def _format_stat_value(self, column: str, value: float) -> str:
+        """Format a statistic value based on column type."""
+        if 'Gain%' in column or '%' in column:
+            return self.currency_formatter.format_percentage(value)
+        elif column in ['Cost', 'Gain$', 'Value', 'Ave$', 'Day$']:
+            return self.currency_formatter.format_currency(value)
+        else:
+            return self.currency_formatter.format_number(value)
+
+    def _format_display_data(self, df: pd.DataFrame) -> List[List[Any]]:
+        """Format DataFrame data for display."""
+        display_data = []
+
+        for _, row in df.iterrows():
+            display_row = [
+                row['Symbol'],
+                row['Description'],
+                row['Qty'],
+                # Ave$/Day$ - pass raw value for Rich coloring
+                row[self.headers[4]],
+                row['Price'],
+                row['Gain%'],
+                row['Cost'],
+                row['Gain$'],
+                row['Value']
             ]
+            display_data.append(display_row)
 
-            calc_row = [
-                name,
-                ticker,
-                desc,
-                qty,
-                cost,
-                price,
-                gain_p,
-                t_cost,
-                gain_d,
-                m_value,
-            ]
+        return display_data
 
-            data.append(print_row[1:])  # Remove "Portfolio" column
-            self.print_data.append(print_row)
-            self.calc_data.append(calc_row)
+    def _create_totals_row(self, df: pd.DataFrame) -> List[Any]:
+        """Create a totals row for display."""
+        totals = df.sum()
 
-            # Track totals
-            total_gain_d = total_gain_d + float(gain_d)
-            total_cost = total_cost + t_cost
-            total_gain_p = total_gain_p + float(gain_p)
-            ave_gain_p = self.num_fmt((total_gain_p / count), percent=True)
-            total_value = total_value + m_value
+        # Create totals row matching display data format (9 columns, no Portfolio)
+        return [
+            '',  # Symbol
+            '',  # Description
+            '',  # Qty
+            '',  # Ave$/Day$
+            '',  # Gain%
+            'TOTAL',
+            totals['Cost'],  # Pass raw value for Rich coloring
+            totals['Gain$'],
+            totals['Value']
+        ]
 
-        if self.totals:
-            # Generate totals here
-            totals = ['', '', '', '', '', 'TOTAL',
-                      self.num_fmt(total_cost, color=False), self.num_fmt(total_gain_d),
-                      self.num_fmt(total_value, t_num=(total_value - total_cost))]
-            data.append(totals)
-        self.headers = ['Portfolio', 'Symbol', 'Description', 'Qty', label, 'Price', 'Gain%', 'Cost', 'Gain$', 'Value']
+    def export_to_csv(self, filename: str):
+        """Export portfolio data to CSV."""
+        if self.df is not None:
+            self.df.to_csv(filename, index=False,
+                           header=True, encoding='utf-8')
+            print(f'Exported data to CSV file: {filename}')
+        else:
+            print("No data available to export")
 
-        table = columnar(data,
-                         headers=self.headers[1:],  # Remove "Portfolio" column
-                         no_borders=(not self.borders), terminal_width=self.t_width)
-
-        if not silent:
-            print('Portfolio: {} (Ave. Gain%: {})'.format(colored(name, color='blue'), ave_gain_p))
-            print(table)
-            print("")
-
-    def get_date(self, rec):
-        non_trades = ['ELECTRONIC_FUND', 'RECEIVE_AND_DELIVER', 'JOURNAL']
-        trade = 'TRADE'
-        tmp_date = ''
-        try:
-            if rec['type'] in non_trades:
-                tmp_date = rec['transactionDate']
-            elif rec['type'] == trade:
-                tmp_date = rec['orderDate']
-            else:
-                print(rec['type'])
-                exit()
-        except:
-            traceback.print_exc()
-            self.jprint(rec)
-            exit()
-        return tmp_date.split('T')[0]
-
-    def get_history(self, account):
-        data_dict = self.td_client.get_transactions(account=account, transaction_type='ALL', start_date='2021-01-01')
-        other = []
-        trades = []
-        xfers = []
-        symbols = {}
-        for rec in data_dict:
-            rec_type = rec['type']
-            rec_date = self.get_date(rec)
-            if rec_type == 'TRADE':
-                if 'CORRECTION' in rec['description']:
-                    continue
-                # ToDo: Calculate fees
-                # ToDo: Display dividends
-                amount = rec['netAmount']
-                t_type = rec['transactionItem']['instruction']
-                qty = rec['transactionItem']['amount']
-                price = rec['transactionItem']['price']
-                symbol = rec['transactionItem']['instrument']['symbol']
-                row = [rec_date, t_type, symbol, qty, price, amount]
-                trades.append(row)
-            if rec_type == 'RECEIVE_AND_DELIVER':
-                qty = rec['transactionItem']['amount']
-                symbol = rec['transactionItem']['instrument']['symbol']
-                symbols[symbol] = int(qty)
-
-        print('TRADES')
-        table = columnar(trades, headers=['Date', 'Type', 'Symbol', 'Qty', 'Cost', 'Amount'], no_borders=True, terminal_width=self.t_width)
-        print(table)
-
-        if account != self.td_roth:
-            print('TRANSFERS')
-            for key in sorted(symbols):
-                xfers.append([key, symbols[key]])
-            table = columnar(xfers, headers=['Symbol', 'Qty'], no_borders=True, terminal_width=self.t_width)
-            print(table)
+    def get_portfolio_names(self) -> List[str]:
+        """Get list of portfolio names."""
+        return self.portfolio_loader.get_portfolio_names()

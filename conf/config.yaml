@@ -1,0 +1,63 @@
+# Stock Portfolio Tracker Configuration
+# This file contains all configurable settings for the portfolio tracker
+
+# Application Information is defined in conf/constants.py
+
+# File Paths Configuration
+paths:
+  portfolios_dir: "/Users/royarzab/chief_plugins/stocks/portfolios"  # Directory containing portfolio YAML files
+  config_file: "conf/config.yaml"   # This configuration file
+  log_file: "logs/portfolio.log"    # Log file path (optional)
+
+# Display Configuration
+display:
+  terminal_width: 120              # Default terminal width
+  borders: false                   # Default border setting for tables
+  show_totals: true               # Show totals row by default
+  include_crypto: false           # Include crypto by default
+  include_unvested: false         # Include unvested stocks by default
+
+# Currency Formatting
+currency:
+  decimal_places: 2               # Number of decimal places for currency
+  show_symbol: true               # Show $ symbol
+  colored_mode: true              # Use colors for positive/negative values
+  negative_format: "parentheses"  # Format for negative values: "parentheses" or "minus"
+
+# Table Display Options
+tables:
+  bordered_style: "heavy"         # Border style for -b flag: "light", "heavy", "double"
+  columnar_style: "clean"         # Style for columnar display: "clean", "minimal"
+  header_style: "bold"            # Header text style: "bold", "italic", "normal"
+  number_alignment: "right"       # Number column alignment: "left", "right", "center"
+
+# API Configuration
+api:
+  yahoo:
+    timeout: 30                   # Request timeout in seconds
+    retries: 3                    # Number of retries on failure
+    cache_duration: 3600          # Cache duration in seconds (1 hour)
+  
+
+# Portfolio Configuration
+portfolio:
+  default_currency: "USD"         # Default currency for calculations
+  lot_date_format: "%Y-%m-%d"     # Date format for lot dates
+  auto_detect_crypto: true        # Automatically detect crypto symbols
+  crypto_symbols:                 # Known crypto symbols
+    - "BTC-USD"
+    - "ETH-USD"
+    - "DOGE-USD"
+    - "LTC-USD"
+    - "XRP-USD"
+    - "MATIC-USD"
+    - "XLM-USD"
+    - "SHIB-USD"
+    - "TEL-USD"
+
+# Logging Configuration
+logging:
+  level: "INFO"                   # Log level: DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_logging: false             # Enable file logging
+  console_logging: true           # Enable console logging

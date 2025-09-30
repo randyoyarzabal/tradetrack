@@ -1,7 +1,7 @@
-VERSION = 'v0.3'
-RELEASE_DATE = '2023-Jun-03'
+VERSION = 'v2.0'
+RELEASE_DATE = '2025-Oct-15'
 AUTHOR = 'Randy E. Oyarzabal'
-GIT_REPO = 'https://github.com/randyoyarzabal/stocks'
+GIT_REPO = 'https://gitlab.homelab.io/techno/tradetrack'
 
 
 def banner(tool):
