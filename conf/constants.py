@@ -5,4 +5,4 @@ GIT_REPO = 'https://gitlab.homelab.io/techno/tradetrack'
 
 
 def banner(tool):
-    return '{} ver. {} ({})'.format(tool.split('.')[0].upper(), VERSION, RELEASE_DATE)
+    return 'TradeTrack ver. {} ({})'.format(VERSION, RELEASE_DATE)

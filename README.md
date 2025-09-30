@@ -14,6 +14,9 @@ TradeTrack is a modern, feature-rich command-line tool for tracking and analyzin
 - **📝 Lot Tracking**: Track individual purchase lots with dates and cost basis
 - **💱 Multi-currency Support**: Handle different currencies and manual price overrides
 - **📊 Export Capabilities**: Export portfolio data to CSV format
+- **🛠️ CRUD Operations**: Create, read, update, and delete portfolios, symbols, and lots
+- **📊 Tax Analysis**: Analyze lot aging and capital gains for tax optimization
+- **🔄 Backup & Restore**: Automatic portfolio backups and restore functionality
 
 ## 🚀 Quick Start
 
@@ -55,8 +58,14 @@ python stocks.py -p crypto
 # Display with borders (Rich mode)
 python stocks.py -p stocks -b
 
+# Display with full terminal width
+python stocks.py -p crypto -t 0
+
 # Show all portfolios
 python stocks.py --all
+
+# Show all portfolios including crypto
+python stocks.py --all -ic
 
 # Display statistics
 python stocks.py --stats
@@ -64,6 +73,77 @@ python stocks.py --stats
 # Export to CSV
 python stocks.py --all -c portfolio_export.csv
 ```
+
+## 🛠️ CRUD Operations
+
+TradeTrack now includes comprehensive CRUD (Create, Read, Update, Delete) operations for managing your portfolios:
+
+### Portfolio Management
+
+```bash
+# Create a new portfolio
+python stocks.py --create-portfolio new_portfolio "My new portfolio"
+
+# Delete a portfolio
+python stocks.py --delete-portfolio old_portfolio
+
+# List all portfolios
+python stocks.py --list
+```
+
+### Symbol Management
+
+```bash
+# Add a new symbol to a portfolio
+python stocks.py --add-symbol crypto ETH-USD "Ethereum"
+
+# Remove a symbol and all its lots
+python stocks.py --remove-symbol crypto BTC-USD
+```
+
+### Lot Management
+
+```bash
+# Add a new lot (uses current date if not specified)
+python stocks.py --add-lot crypto BTC-USD today 0.5 45000.0
+
+# Add a lot with specific date and manual price
+python stocks.py --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
+
+# Remove a lot by index
+python stocks.py --remove-lot crypto BTC-USD 0
+
+# List all lots for a symbol
+python stocks.py --list-lots crypto BTC-USD
+```
+
+### Tax Analysis
+
+```bash
+# Analyze tax implications for all symbols in a portfolio
+python stocks.py --tax-analysis crypto all
+
+# Analyze tax implications for a specific symbol
+python stocks.py --tax-analysis crypto BTC-USD
+```
+
+### Backup & Restore
+
+```bash
+# Create a backup of a portfolio
+python stocks.py --backup-portfolio crypto
+
+# Restore a portfolio from backup
+python stocks.py --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
+```
+
+### Key Features
+
+- **Automatic Sorting**: Portfolios are kept in alphabetical order, lots sorted by date (newest first)
+- **Default Values**: New lots default to current date if not specified
+- **Tax Analysis**: Track lot aging and capital gains for tax optimization
+- **Backup System**: Automatic timestamped backups before major changes
+- **Validation**: Comprehensive input validation and error handling
 
 ## 📁 Project Structure
 
@@ -78,11 +158,13 @@ tradetrack/
 ├── libs/
 │   ├── config_loader.py         # Configuration management
 │   ├── currency_formatter.py    # Currency formatting utilities
+│   ├── lot_analysis.py          # Lot analysis and performance tracking
 │   ├── portfolio_loader.py      # YAML portfolio loading
 │   ├── portfolio_library.py     # Main portfolio logic
 │   ├── rich_display.py          # Rich table display
+│   ├── tax_analysis.py          # Tax analysis and lot aging
 │   └── yahoo_quotes.py          # Yahoo Finance API integration
-├── stocks.py                    # Main CLI application
+├── stocks.py                    # Main CLI application with CRUD operations
 ├── requirements.txt             # Python dependencies
 └── README.md                   # This file
 ```
@@ -150,38 +232,72 @@ stocks:
 
 ## 🎯 Command Line Options
 
-### Basic Commands
+The command line options are organized into logical groups for better usability:
+
+### General Options
+
+| Option | Description |
+|--------|-------------|
+| `-h, --help` | Show help message |
+| `-v, --version` | Show version information |
+| `--debug` | Enable debug mode |
+
+### Screen Display Options
+
+| Option | Description |
+|--------|-------------|
+| `-b, --borders` | Use Rich tables with borders |
+| `-t WIDTH` | Set terminal width (0 = stretch to full width) |
+| `-n, --no_totals` | Hide totals row |
+
+### Portfolio Display Options
 
 | Option | Description |
 |--------|-------------|
 | `-p PORTFOLIO` | Display specific portfolio |
 | `--all` | Display all portfolios combined |
+| `--list` | List available portfolios |
 | `-s, --stats` | Show portfolio statistics |
 | `-c FILE` | Export to CSV file |
-
-### Display Options
-
-| Option | Description |
-|--------|-------------|
-| `-b, --borders` | Use Rich tables with borders |
+| `-ic, --crypto` | Include cryptocurrency (--all only) |
 | `-d, --day` | Show day gains instead of average cost |
-| `-n, --no_totals` | Hide totals row |
-| `-t WIDTH` | Set terminal width |
 
-### Filter Options
+### Lot Management Options
 
 | Option | Description |
 |--------|-------------|
-| `-ic, --crypto` | Include cryptocurrency |
-| `-iu, --unvested` | Include unvested stocks |
+| `--add-lot PORTFOLIO SYMBOL DATE SHARES COST_BASIS [MANUAL_PRICE]` | Add a new lot to a portfolio |
+| `--remove-lot PORTFOLIO SYMBOL LOT_INDEX` | Remove a lot from a portfolio |
+| `--update-lot PORTFOLIO SYMBOL LOT_INDEX FIELD` | Update a lot field |
+| `--list-lots PORTFOLIO SYMBOL` | List all lots for a symbol |
 
-### Utility Options
+### Symbol Management Options
 
 | Option | Description |
 |--------|-------------|
-| `--debug` | Enable debug mode |
-| `-h, --help` | Show help message |
-| `-v, --version` | Show version information |
+| `--add-symbol PORTFOLIO SYMBOL DESCRIPTION` | Add a new symbol to a portfolio |
+| `--remove-symbol PORTFOLIO SYMBOL` | Remove a symbol and all its lots |
+
+### Portfolio Management Options
+
+| Option | Description |
+|--------|-------------|
+| `--create-portfolio PORTFOLIO DESCRIPTION` | Create a new portfolio |
+| `--delete-portfolio PORTFOLIO` | Delete a portfolio |
+| `--backup-portfolio PORTFOLIO` | Create a backup of a portfolio |
+| `--restore-portfolio BACKUP_FILE PORTFOLIO` | Restore a portfolio from backup |
+
+### Analysis Options
+
+| Option | Description |
+|--------|-------------|
+| `--tax-analysis PORTFOLIO SYMBOL` | Show tax analysis for portfolio/symbol |
+
+### Data Options
+
+| Option | Description |
+|--------|-------------|
+| `--live` | Force live data fetch (bypass cache) |
 
 ## 📊 Display Modes
 

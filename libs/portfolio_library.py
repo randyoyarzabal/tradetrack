@@ -27,7 +27,6 @@ class PortfolioLibrary:
         self.borders = False
         self.show_totals = True
         self.include_crypto = False
-        self.include_unvested = False
         self.terminal_width = self.config_loader.get_terminal_width()
         self.day_mode = False
 
@@ -112,14 +111,11 @@ class PortfolioLibrary:
 
     def _fetch_quotes_with_spinner(self, symbols: List[str], reason: str):
         """Fetch quotes with a progress spinner."""
-        from rich.console import Console
-        from rich.spinner import Spinner
-        from rich.text import Text
+        import sys
         import time
+        import threading
         import io
         from contextlib import redirect_stderr, redirect_stdout
-
-        console = Console()
 
         # Create message based on reason
         if reason == "live data requested":
@@ -129,14 +125,52 @@ class PortfolioLibrary:
         else:
             message = "Loading data"
 
-        # Try a different spinner style
-        spinner_style = "arc"
+        # Check if we can use Rich console
+        try:
+            from rich.console import Console
+            from rich.spinner import Spinner
+            from rich.text import Text
+            
+            console = Console()
+            
+            # Only use Rich if we have a proper terminal
+            if console.is_terminal:
+                # Create spinner
+                with console.status(Spinner("arc", Text(message, style="cyan")), spinner_style="cyan") as status:
+                    # Suppress all output during fetch
+                    with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+                        self.quotes = self.yahoo_quotes.get_quotes(symbols)
+                return
+        except Exception:
+            pass
 
-        # Create spinner
-        with console.status(Spinner(spinner_style, Text(message, style="cyan")), spinner_style="cyan") as status:
+        # Fallback: Simple text-based spinner
+        print(f"{message}...", end="", flush=True)
+        
+        # Start spinner in a separate thread
+        spinner_chars = "|/-\\"
+        spinner_running = True
+        
+        def spinner_worker():
+            i = 0
+            while spinner_running:
+                print(f"\r{message} {spinner_chars[i % len(spinner_chars)]}", end="", flush=True)
+                time.sleep(0.1)
+                i += 1
+        
+        spinner_thread = threading.Thread(target=spinner_worker)
+        spinner_thread.daemon = True
+        spinner_thread.start()
+        
+        try:
             # Suppress all output during fetch
             with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
                 self.quotes = self.yahoo_quotes.get_quotes(symbols)
+        finally:
+            # Stop spinner
+            spinner_running = False
+            spinner_thread.join(timeout=0.2)
+            print(f"\r{message} complete!    ", flush=True)
 
     def _filter_stocks(self) -> Dict[str, Dict[str, Any]]:
         """Filter stocks based on current settings."""
@@ -147,9 +181,6 @@ class PortfolioLibrary:
             if not self.include_crypto and self.yahoo_quotes.is_crypto(symbol):
                 continue
 
-            # Check unvested inclusion (you can add logic here for unvested stocks)
-            if not self.include_unvested and 'UNVESTED' in stock_data.get('portfolio', ''):
-                continue
 
             filtered[symbol] = stock_data
 
