@@ -91,7 +91,14 @@ class RichDisplay:
             # Add footer if provided
             footer_text = None
             if footer_data and i < len(footer_data):
-                footer_text = Text(footer_data[i], style="bold bright_white")
+                footer_value = footer_data[i]
+                if footer_value and isinstance(footer_value, (int, float)):
+                    # Apply color coding to numeric footer values
+                    formatted_footer = self._format_cell_with_rich_color(footer_value, header)
+                    footer_text = formatted_footer
+                else:
+                    # Use default styling for non-numeric footer values
+                    footer_text = Text(str(footer_value), style="bold bright_white")
 
             table.add_column(header_text, justify=justify, footer=footer_text)
 

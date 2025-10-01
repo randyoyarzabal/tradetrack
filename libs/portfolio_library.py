@@ -528,19 +528,25 @@ class PortfolioLibrary:
                     gain_colored = colored(gain_text, 'red', force_color=True)
                 portfolio_summary = f"Portfolio: {portfolio_name.upper()} (All-Time {gain_colored})"
 
+            # Prepare footer data if totals are enabled
+            footer_data = None
+            if self.show_totals:
+                footer_data = self._create_portfolio_footer_data(portfolio_df)
+
             # Display the portfolio table
             if self.borders:
-                # Use Rich table with borders
+                # Use Rich table with borders and footer
                 self.rich_display.display_table(
                     headers=grouped_headers,
                     data=display_data,
                     bordered=True,
-                    title=portfolio_summary
+                    title=portfolio_summary,
+                    footer_data=footer_data
                 )
             else:
                 # Use columnar table without borders
                 if self.show_totals:
-                    # Add portfolio totals row
+                    # Add portfolio totals row for columnar display
                     totals_row = self._create_portfolio_totals_row(
                         portfolio_df)
                     display_data.append(totals_row)
@@ -596,21 +602,44 @@ class PortfolioLibrary:
         return display_data
 
     def _create_portfolio_totals_row(self, portfolio_df):
-        """Create totals row for a single portfolio."""
+        """Create totals row for a single portfolio (for columnar display)."""
         total_cost = portfolio_df['Cost'].sum()
         total_gain = portfolio_df['Gain$'].sum()
         total_value = portfolio_df['Value'].sum()
 
+        # Format totals row (matching regular portfolio display format)
+        # Only show totals for Cost, Gain$, and Value columns - leave others empty
         return [
             '',  # Symbol
             '',  # Description
-            '',  # Qty
-            '',  # Ave$
-            '',  # Price
-            '',  # Gain%
+            '',  # Qty (no total)
+            '',  # Ave$ (no total)
+            '',  # Price (no total)
+            '',  # Gain% (no total)
             self.currency_formatter.format_currency(total_cost),
             self.currency_formatter.format_currency(total_gain),
             self.currency_formatter.format_currency(total_value)
+        ]
+
+    def _create_portfolio_footer_data(self, portfolio_df):
+        """Create footer data for a single portfolio (for Rich display)."""
+        total_cost = portfolio_df['Cost'].sum()
+        total_gain = portfolio_df['Gain$'].sum()
+        total_value = portfolio_df['Value'].sum()
+
+        # Format footer data for Rich display with proper color coding
+        # Only show totals for Cost, Gain$, and Value columns - leave others empty
+        # Pass raw numeric values so Rich can apply proper color coding
+        return [
+            '',  # Symbol
+            '',  # Description
+            '',  # Qty (no total)
+            '',  # Ave$ (no total)
+            '',  # Price (no total)
+            '',  # Gain% (no total)
+            total_cost,  # Cost (raw value for Rich color coding)
+            total_gain,  # Gain$ (raw value for Rich color coding)
+            total_value  # Value (raw value for Rich color coding)
         ]
 
     def _format_gain_percentage(self, gain_pct, use_rich=False):
@@ -792,6 +821,7 @@ class PortfolioLibrary:
         totals = df.sum()
 
         # Format footer data for each column
+        # Pass raw numeric values so Rich can apply proper color coding
         return [
             '',  # Portfolio
             '',  # Symbol
@@ -800,12 +830,9 @@ class PortfolioLibrary:
             '',  # Ave$/Day$
             '',  # Price
             '',  # Gain%
-            self.currency_formatter.format_currency(
-                totals.get('Cost', 0), rich_mode=True),
-            self.currency_formatter.format_currency(
-                totals.get('Gain$', 0), rich_mode=True),
-            self.currency_formatter.format_currency(
-                totals.get('Value', 0), rich_mode=True)
+            totals.get('Cost', 0),  # Cost (raw value for Rich color coding)
+            totals.get('Gain$', 0),  # Gain$ (raw value for Rich color coding)
+            totals.get('Value', 0)  # Value (raw value for Rich color coding)
         ]
 
     def export_to_csv(self, filename: str):
