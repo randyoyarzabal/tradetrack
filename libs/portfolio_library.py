@@ -334,8 +334,16 @@ class PortfolioLibrary:
         min_max = {}
         for column in ['Value', 'Gain$', 'Gain%', 'Cost', 'Qty']:
             if column in self.df.columns:
-                min_idx = self.df[column].idxmin()
-                max_idx = self.df[column].idxmax()
+                # For Qty column, we need to use numeric values for proper comparison
+                if column == 'Qty':
+                    # Create a numeric version of Qty for comparison
+                    qty_numeric = self.df[column].astype(
+                        str).str.replace('*', '').astype(float)
+                    min_idx = qty_numeric.idxmin()
+                    max_idx = qty_numeric.idxmax()
+                else:
+                    min_idx = self.df[column].idxmin()
+                    max_idx = self.df[column].idxmax()
 
                 min_max[f'Min {column}'] = (
                     self.df.loc[min_idx, 'Portfolio'],
