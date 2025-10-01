@@ -1,7 +1,7 @@
 # Stock Portfolio Tracker Configuration
 # This file contains all configurable settings for the portfolio tracker
 
-# Application Information is defined in conf/constants.py
+# Application Information is defined in conf/version.py
 
 # File Paths Configuration
 paths:

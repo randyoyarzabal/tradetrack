@@ -10,7 +10,7 @@ from libs.config_loader import get_config_loader
 from libs.portfolio_library import PortfolioLibrary
 from libs.tax_analysis import TaxAnalyzer
 from libs.lot_analysis import LotAnalyzer
-from conf.constants import *
+from conf.version import *
 import argparse
 import os
 import sys

@@ -8,33 +8,9 @@
 
 TradeTrack is a feature-rich command-line tool for tracking and analyzing your stock and cryptocurrency portfolios. Built with Python and the Rich library, it offers real-time data from Yahoo Finance, beautiful table displays, and comprehensive portfolio management.
 
-## Key Features
+## 🚀 Getting Started
 
-- **Real-time Data** - Live stock and crypto prices via Yahoo Finance
-- **Beautiful Displays** - Rich tables with borders or clean columnar layout  
-- **Portfolio Management** - Track multiple portfolios with YAML configuration
-- **Comprehensive Analytics** - Detailed statistics, gains/losses, and performance metrics
-- **Highly Configurable** - Customizable display, currency formatting, and sorting
-- **Lot Tracking** - Track individual purchase lots with dates and cost basis
-- **Manual Price Overrides** - Override API prices for delisted or custom assets
-- **CRUD Operations** - Full create, read, update, delete functionality
-- **Tax Analysis** - Analyze lot aging and capital gains for tax optimization
-- **Backup & Restore** - Automatic portfolio backups and restore functionality
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.8 or higher
-- pip (Python package installer)
-
-### Configuration File
-
-TradeTrack automatically looks for configuration in this order:
-1. **Environment Variable**: `TTRACK_CONFIG_FILE` (if set)
-2. **Default**: `conf/config.yaml` (relative to application directory)
-
-### Installation
+### Step 1: Installation
 
 1. **Clone the repository:**
 
@@ -43,62 +19,103 @@ TradeTrack automatically looks for configuration in this order:
    cd stocks
    ```
 
-2. **Create and activate virtual environment:**
+2. **Set up Python environment:**
 
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-
-   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure your portfolios:**
-   - Copy `templates/config.yaml` to `conf/config.yaml` (default location)
-   - Or set `TTRACK_CONFIG_FILE` environment variable to use a custom config location
-   - Update the `portfolios_dir` path in the config to point to your portfolio directory
-   - Create your portfolio YAML files in the specified directory
+3. **Verify installation:**
 
-### Configuration Options
+   ```bash
+   python ttrack.py --help
+   ```
 
-**Default Configuration:**
-- Config file: `conf/config.yaml` (auto-detected)
-- Portfolios directory: `portfolios/` (configurable in config file)
+### Step 2: Create Your First Portfolio
 
-**Custom Configuration:**
-```bash
-# Use custom config file location
-export TTRACK_CONFIG_FILE="/path/to/custom/config.yaml"
-python ttrack.py -p crypto
+1. **Create a new portfolio:**
 
-# Or specify directly (if supported by your setup)
-python ttrack.py -p crypto --config /path/to/custom/config.yaml
-```
+   ```bash
+   python ttrack.py --create-portfolio my_stocks "My Stock Portfolio"
+   ```
 
-### Basic Usage
+2. **Add your first stock:**
 
-```bash
-# Display a specific portfolio
-python ttrack.py -p crypto
+   ```bash
+   # Add Apple stock (10 shares at $150 each on 2024-01-15)
+   python ttrack.py --add-lot my_stocks AAPL 2024-01-15 10 150.0
+   ```
 
-# Display with borders (Rich mode)
-python ttrack.py -p stocks -b
+3. **Add more stocks:**
 
-# Show all portfolios
-python ttrack.py --all
+   ```bash
+   # Add Microsoft stock (5 shares at $300 each today)
+   python ttrack.py --add-lot my_stocks MSFT today 5 300.0
+   
+   # Add Tesla stock (2 shares at $200 each with current price override)
+   python ttrack.py --add-lot my_stocks TSLA 2024-02-01 2 200.0 250.0
+   ```
 
-# Show all portfolios including crypto
-python ttrack.py --all -ic
+### Step 3: View Your Portfolio
 
-# Display statistics
-python ttrack.py --stats
+1. **Display your portfolio:**
 
-# Export to CSV
-python ttrack.py --all -c portfolio_export.csv
-```
+   ```bash
+   python ttrack.py -p my_stocks
+   ```
+
+2. **View with beautiful borders:**
+
+   ```bash
+   python ttrack.py -p my_stocks -b
+   ```
+
+3. **See all your portfolios:**
+
+   ```bash
+   python ttrack.py --all
+   ```
+
+### Step 4: Advanced Usage
+
+1. **Create multiple portfolios:**
+
+   ```bash
+   # Create a crypto portfolio
+   python ttrack.py --create-portfolio crypto "My Crypto Portfolio"
+   python ttrack.py --add-lot crypto BTC-USD 2024-01-01 0.5 45000.0
+   python ttrack.py --add-lot crypto ETH-USD 2024-01-15 2.0 2500.0
+   
+   # Create an ETF portfolio
+   python ttrack.py --create-portfolio etfs "My ETF Portfolio"
+   python ttrack.py --add-lot etfs VOO 2024-01-01 10 400.0
+   python ttrack.py --add-lot etfs QQQ 2024-01-01 5 350.0
+   ```
+
+2. **View comprehensive statistics:**
+
+   ```bash
+   python ttrack.py --stats
+   ```
+
+3. **Export your data:**
+
+   ```bash
+   python ttrack.py --all -c my_portfolio_export.csv
+   ```
+
+## 📊 Key Features
+
+- **Real-time Data** - Live stock and crypto prices via Yahoo Finance
+- **Beautiful Displays** - Rich tables with borders or clean columnar layout  
+- **Portfolio Management** - Track multiple portfolios with YAML configuration
+- **Comprehensive Analytics** - Detailed statistics, gains/losses, and performance metrics
+- **Lot Tracking** - Track individual purchase lots with dates and cost basis
+- **Tax Analysis** - Analyze lot aging and capital gains for tax optimization
+- **Manual Price Overrides** - Override API prices for delisted or custom assets
+- **Backup & Restore** - Automatic portfolio backups and restore functionality
 
 ## Common Commands
 
@@ -141,7 +158,7 @@ python ttrack.py --add-symbol crypto ETH-USD "Ethereum"
 python ttrack.py --remove-symbol crypto BTC-USD
 ```
 
-### Display Options
+### Common Display Commands
 
 ```bash
 # Rich tables with borders
@@ -163,7 +180,7 @@ python ttrack.py -p crypto --live
 tradetrack/
 ├── conf/
 │   ├── config.yaml              # Main configuration file
-│   └── constants.py             # Application constants
+│   └── version.py               # Application version information
 ├── libs/
 │   ├── config_loader.py         # Configuration management
 │   ├── currency_formatter.py    # Currency formatting utilities
@@ -233,6 +250,7 @@ display:
 ```
 
 ### Portfolio Format
+
 Portfolios are defined in YAML format:
 
 ```yaml
