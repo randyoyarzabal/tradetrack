@@ -92,13 +92,17 @@ class RichDisplay:
             footer_text = None
             if footer_data and i < len(footer_data):
                 footer_value = footer_data[i]
-                if footer_value and isinstance(footer_value, (int, float)):
+                # Check for numeric types including numpy types
+                if footer_value and (isinstance(footer_value, (int, float)) or
+                                     str(type(footer_value)).startswith('<class \'numpy.')):
                     # Apply color coding to numeric footer values
-                    formatted_footer = self._format_cell_with_rich_color(footer_value, header)
+                    formatted_footer = self._format_cell_with_rich_color(
+                        footer_value, header)
                     footer_text = formatted_footer
                 else:
                     # Use default styling for non-numeric footer values
-                    footer_text = Text(str(footer_value), style="bold bright_white")
+                    footer_text = Text(str(footer_value),
+                                       style="bold bright_white")
 
             table.add_column(header_text, justify=justify, footer=footer_text)
 
@@ -244,18 +248,18 @@ class RichDisplay:
                 value, rich_mode=True)
 
         # Create Rich Text with colors
-        text = Text(formatted_text)
-
         # Apply colors based on value and column type
         if use_colors:
             # Use Rich colors when colored_mode is enabled
             if value < 0:
-                text.stylize("red")
+                text = Text(formatted_text, style="red")
             elif value > 0 and is_gain_loss_column:
-                text.stylize("green")
+                text = Text(formatted_text, style="green")
+            else:
+                text = Text(formatted_text)
         else:
             # No colors when colored_mode is disabled
-            pass
+            text = Text(formatted_text)
 
         return text
 
