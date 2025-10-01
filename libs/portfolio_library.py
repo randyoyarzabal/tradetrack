@@ -181,12 +181,15 @@ class PortfolioLibrary:
         """Filter stocks based on current settings."""
         filtered = {}
 
-        for symbol, stock_data in self.all_stocks.items():
+        for portfolio_symbol, stock_data in self.all_stocks.items():
+            # Extract the actual symbol from the portfolio_symbol key
+            symbol = stock_data['symbol']
+            
             # Check crypto inclusion
             if not self.include_crypto and self.yahoo_quotes.is_crypto(symbol):
                 continue
 
-            filtered[symbol] = stock_data
+            filtered[portfolio_symbol] = stock_data
 
         return filtered
 
@@ -194,11 +197,13 @@ class PortfolioLibrary:
         """Get list of symbols that have manual prices in their lots."""
         manual_price_symbols = []
 
-        for symbol, stock_data in stocks.items():
+        for portfolio_symbol, stock_data in stocks.items():
             # Check if any lot has a manual_price
             manual_prices = [lot.get(
                 'manual_price') for lot in stock_data['lots'] if lot.get('manual_price')]
             if manual_prices:
+                # Extract the actual symbol from the portfolio_symbol key
+                symbol = stock_data['symbol']
                 manual_price_symbols.append(symbol)
 
         return manual_price_symbols
@@ -207,7 +212,10 @@ class PortfolioLibrary:
         """Process stock data into pandas DataFrame."""
         rows = []
 
-        for symbol, stock_data in stocks.items():
+        for portfolio_symbol, stock_data in stocks.items():
+            # Extract the actual symbol from the portfolio_symbol key
+            symbol = stock_data['symbol']
+            
             # Check if we have quote data, if not, try to use manual prices
             if symbol not in self.quotes:
                 # Try to use manual price as fallback

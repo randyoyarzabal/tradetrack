@@ -190,7 +190,7 @@ class PortfolioLoader:
         Get all stocks from all portfolios.
         
         Returns:
-            Dictionary mapping symbol to stock data
+            Dictionary mapping portfolio_symbol to stock data
         """
         if not self.portfolios:
             self.load_portfolios()
@@ -198,20 +198,22 @@ class PortfolioLoader:
         all_stocks = {}
         for portfolio_name, portfolio_data in self.portfolios.items():
             for symbol, stock_data in portfolio_data.get('stocks', {}).items():
-                if symbol not in all_stocks:
-                    all_stocks[symbol] = {
-                        'symbol': symbol,
-                        'description': stock_data.get('description', symbol),
-                        'notes': stock_data.get('notes', ''),
-                        'portfolio': portfolio_name,
-                        'lots': []
-                    }
+                # Create a unique key for each portfolio-symbol combination
+                portfolio_symbol = f"{portfolio_name}_{symbol}"
+                
+                all_stocks[portfolio_symbol] = {
+                    'symbol': symbol,
+                    'description': stock_data.get('description', symbol),
+                    'notes': stock_data.get('notes', ''),
+                    'portfolio': portfolio_name,
+                    'lots': []
+                }
                 
                 # Add lots with portfolio context
                 for lot in stock_data.get('lots', []):
                     lot_with_portfolio = lot.copy()
                     lot_with_portfolio['portfolio'] = portfolio_name
-                    all_stocks[symbol]['lots'].append(lot_with_portfolio)
+                    all_stocks[portfolio_symbol]['lots'].append(lot_with_portfolio)
         
         return all_stocks
 
