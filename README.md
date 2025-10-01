@@ -8,103 +8,84 @@
 
 TradeTrack is a feature-rich command-line tool for tracking and analyzing your stock and cryptocurrency portfolios. Built with Python and the Rich library, it offers real-time data from Yahoo Finance, beautiful table displays, and comprehensive portfolio management.
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-### Step 1: Installation
+### Prerequisites
 
-1. **Clone the repository:**
+- **Python 3.8+** installed on your system
+- **Git** (for cloning the repository)
+
+### Installation (Any OS)
+
+1. **Clone and setup:**
 
    ```bash
    git clone https://github.com/randyoyarzabal/stocks.git
    cd stocks
    ```
 
-2. **Set up Python environment:**
+2. **Create virtual environment:**
 
    ```bash
+   # Windows
+   python -m venv .venv
+   .venv\Scripts\activate
+   
+   # macOS/Linux
    python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+
+   ```bash
    pip install -r requirements.txt
    ```
 
-3. **Verify installation:**
+4. **Verify installation:**
 
    ```bash
    python ttrack.py --help
    ```
 
-### Step 2: Create Your First Portfolio
+### Your First Portfolio (2 minutes)
 
-1. **Create a new portfolio:**
+1. **Create a portfolio:**
 
    ```bash
    python ttrack.py --create-portfolio my_stocks "My Stock Portfolio"
    ```
 
-2. **Add your first stock:**
+2. **Add some stocks:**
 
    ```bash
-   # Add Apple stock (10 shares at $150 each on 2024-01-15)
-   python ttrack.py --add-lot my_stocks AAPL 2024-01-15 10 150.0
-   ```
-
-3. **Add more stocks:**
-
-   ```bash
-   # Add Microsoft stock (5 shares at $300 each today)
-   python ttrack.py --add-lot my_stocks MSFT today 5 300.0
+   # Add Apple stock
+   python ttrack.py --add-lot my_stocks AAPL today 10 150.0
    
-   # Add Tesla stock (2 shares at $200 each with current price override)
-   python ttrack.py --add-lot my_stocks TSLA 2024-02-01 2 200.0 250.0
+   # Add Microsoft stock
+   python ttrack.py --add-lot my_stocks MSFT today 5 300.0
    ```
 
-### Step 3: View Your Portfolio
-
-1. **Display your portfolio:**
+3. **View your portfolio:**
 
    ```bash
+   # Simple view
    python ttrack.py -p my_stocks
-   ```
-
-2. **View with beautiful borders:**
-
-   ```bash
+   
+   # Beautiful bordered view
    python ttrack.py -p my_stocks -b
    ```
 
-3. **See all your portfolios:**
+**That's it!** You now have a working portfolio tracker. 🎉
 
-   ```bash
-   python ttrack.py --all
-   ```
+### Next Steps
 
-### Step 4: Advanced Usage
+- **Add more portfolios:** `python ttrack.py --create-portfolio crypto "Crypto Portfolio"`
+- **View all portfolios:** `python ttrack.py --all`
+- **Get statistics:** `python ttrack.py --stats`
+- **Export data:** `python ttrack.py --all -c export.csv`
 
-1. **Create multiple portfolios:**
-
-   ```bash
-   # Create a crypto portfolio
-   python ttrack.py --create-portfolio crypto "My Crypto Portfolio"
-   python ttrack.py --add-lot crypto BTC-USD 2024-01-01 0.5 45000.0
-   python ttrack.py --add-lot crypto ETH-USD 2024-01-15 2.0 2500.0
-   
-   # Create an ETF portfolio
-   python ttrack.py --create-portfolio etfs "My ETF Portfolio"
-   python ttrack.py --add-lot etfs VOO 2024-01-01 10 400.0
-   python ttrack.py --add-lot etfs QQQ 2024-01-01 5 350.0
-   ```
-
-2. **View comprehensive statistics:**
-
-   ```bash
-   python ttrack.py --stats
-   ```
-
-3. **Export your data:**
-
-   ```bash
-   python ttrack.py --all -c my_portfolio_export.csv
-   ```
+> **Need help?** Check the [Configuration Guide](docs/configuration.md) or [Troubleshooting](docs/troubleshooting.md)
 
 ## 📊 Key Features
 
@@ -419,12 +400,18 @@ python ttrack.py --debug -p crypto
 
 For detailed documentation, see the `/docs` folder:
 
-- **[Configuration Guide](docs/configuration.md)** - Detailed configuration options
-- **[Portfolio Format](docs/portfolio-format.md)** - Portfolio YAML format guide
-- **[Dependencies](docs/dependencies.md)** - Requirements and dependency information
-- **[Advanced Features](docs/advanced-features.md)** - Advanced features and tips
+- **[Configuration Guide](docs/configuration.md)** - Detailed configuration options and setup
+- **[Portfolio Format](docs/portfolio-format.md)** - YAML portfolio format and examples
+- **[Advanced Features](docs/advanced-features.md)** - Power user features and techniques
 - **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Dependencies](docs/dependencies.md)** - Requirements and dependency information  
 - **[Development Guide](docs/development.md)** - Development setup, testing, and contributing
+
+### Quick Reference
+
+- **Command Reference**: Run `python ttrack.py --help` for complete command list
+- **Examples**: Check `/templates/` directory for configuration and portfolio examples
+- **Portfolio Templates**: Ready-to-use examples in `/templates/portfolios/`
 
 ## Contributing
 

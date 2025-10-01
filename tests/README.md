@@ -41,6 +41,10 @@ pytest tests/test_basic.py -v
 
 # Run with pytest directly
 pytest tests/ -v
+
+# Enable debug mode for detailed error output
+python tests/run_tests.py --debug
+python tests/run_tests.py --component --debug
 ```
 
 > **For complete development setup instructions, see [docs/development.md](../docs/development.md)**

@@ -86,14 +86,17 @@ python tests/run_tests.py
 
 # Run specific test categories
 
-python tests/run_tests.py --unit
-python tests/run_tests.py --integration
-python tests/run_tests.py --api
-python tests/run_tests.py --runtime
+python tests/run_tests.py --basic
+python tests/run_tests.py --component
 
 # Run tests with pattern matching
 
 python tests/run_tests.py --pattern "test_config"
+
+# Enable debug mode for detailed error output
+
+python tests/run_tests.py --debug
+python tests/run_tests.py --component --debug
 
 # Run with pytest directly
 
@@ -105,8 +108,36 @@ pytest tests/test_config_loader.py -v
 
 - **Basic Tests**: Core functionality and imports
 - **Component Tests**: Individual module testing
-- **Integration Tests**: Key component interactions
-- **Error Tests**: Basic error handling validation
+
+#### Debug Mode
+
+The test runner includes a debug mode that provides detailed error information when tests fail. This is particularly useful during development and troubleshooting.
+
+**Usage:**
+```bash
+# Enable debug mode for all tests
+python tests/run_tests.py --debug
+
+# Enable debug mode for specific test categories
+python tests/run_tests.py --basic --debug
+python tests/run_tests.py --component --debug
+
+# Enable debug mode for pattern matching
+python tests/run_tests.py --pattern "test_config" --debug
+```
+
+**Debug Output Includes:**
+- Return code from failed test commands
+- Execution duration
+- Complete STDOUT output (test results)
+- Complete STDERR output (error messages)
+- Clear visual separation between debug sections
+
+**When to Use Debug Mode:**
+- When tests are failing and you need to see detailed error information
+- During development to understand test behavior
+- When troubleshooting CI/CD issues
+- When investigating test performance problems
 
 ### Test Dependencies
 
