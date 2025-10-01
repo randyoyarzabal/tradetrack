@@ -123,12 +123,15 @@ TradeTrack is a feature-rich command-line tool for tracking and analyzing your s
 
 ```bash
 # Create a new portfolio
+
 python ttrack.py --create-portfolio new_portfolio "My new portfolio"
 
 # Delete a portfolio
+
 python ttrack.py --delete-portfolio old_portfolio
 
 # List all portfolios
+
 python ttrack.py --list
 ```
 
@@ -136,15 +139,19 @@ python ttrack.py --list
 
 ```bash
 # Add a new lot (uses current date if not specified)
+
 python ttrack.py --add-lot crypto BTC-USD today 0.5 45000.0
 
 # Add a lot with specific date and manual price
+
 python ttrack.py --add-lot robinhood AAPL 2024-01-15 10 150.0 155.0
 
 # Remove a lot by index
+
 python ttrack.py --remove-lot crypto BTC-USD 0
 
 # List all lots for a symbol
+
 python ttrack.py --list-lots crypto BTC-USD
 ```
 
@@ -152,9 +159,11 @@ python ttrack.py --list-lots crypto BTC-USD
 
 ```bash
 # Add a new symbol to a portfolio
+
 python ttrack.py --add-symbol crypto ETH-USD "Ethereum"
 
 # Remove a symbol and all its lots
+
 python ttrack.py --remove-symbol crypto BTC-USD
 ```
 
@@ -162,15 +171,19 @@ python ttrack.py --remove-symbol crypto BTC-USD
 
 ```bash
 # Rich tables with borders
+
 python ttrack.py -p crypto -b
 
 # Sort by gain dollars (descending)
+
 python ttrack.py --all --sort gain_dollars --sort-desc
 
 # Show day gains instead of average cost
+
 python ttrack.py -p crypto -d
 
 # Force live data fetch
+
 python ttrack.py -p crypto --live
 ```
 
@@ -217,6 +230,7 @@ Edit `conf/config.yaml` to customize your experience:
 
 ```yaml
 # Display Options
+
 display:
   terminal_width: 120             # Terminal width
   borders: false                  # Default border setting
@@ -226,6 +240,7 @@ display:
   stretch_to_terminal: false      # Stretch tables to full width
 
 # Currency Formatting
+
 currency:
   decimal_places: 2               # Number of decimal places
   show_symbol: true               # Show $ symbol
@@ -233,6 +248,7 @@ currency:
   negative_format: "parentheses"  # Format for negative values
 
 # Sorting Options
+
 display:
   default_sort_column: "symbol"   # Default sort column
   default_sort_descending: false  # Default sort order
@@ -355,9 +371,11 @@ Analyze lot aging and capital gains:
 
 ```bash
 # Analyze tax implications for all symbols
+
 python ttrack.py --tax-analysis crypto all
 
 # Analyze tax implications for a specific symbol
+
 python ttrack.py --tax-analysis crypto BTC-USD
 ```
 
@@ -365,9 +383,11 @@ python ttrack.py --tax-analysis crypto BTC-USD
 
 ```bash
 # Create a backup of a portfolio
+
 python ttrack.py --backup-portfolio crypto
 
 # Restore a portfolio from backup
+
 python ttrack.py --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
 ```
 
@@ -404,6 +424,7 @@ For detailed documentation, see the `/docs` folder:
 - **[Dependencies](docs/dependencies.md)** - Requirements and dependency information
 - **[Advanced Features](docs/advanced-features.md)** - Advanced features and tips
 - **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Development Guide](docs/development.md)** - Development setup, testing, and contributing
 
 ## Contributing
 

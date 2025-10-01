@@ -163,15 +163,19 @@ You can override configuration values using environment variables:
 
 ```bash
 # Override config file path
+
 export CONFIG_FILE="/path/to/custom/config.yaml"
 
 # Override portfolios directory
+
 export TRADETRACK_PORTFOLIOS_DIR="/path/to/portfolios"
 
 # Override terminal width
+
 export TRADETRACK_TERMINAL_WIDTH="140"
 
 # Override cache duration
+
 export TRADETRACK_CACHE_DURATION="600"
 ```
 

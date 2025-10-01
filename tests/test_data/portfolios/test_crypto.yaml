@@ -1,0 +1,41 @@
+# Test Crypto Portfolio
+# This portfolio contains various cryptocurrency holdings for testing purposes
+name: "Test Crypto"
+description: "Test portfolio with cryptocurrency holdings"
+currency: "USD"
+
+lots:
+  - symbol: "BTC-USD"
+    description: "Bitcoin"
+    qty: 0.5
+    cost_per_share: 45000.00
+    date: "2024-01-05"
+    notes: "Test crypto purchase"
+  
+  - symbol: "ETH-USD"
+    description: "Ethereum"
+    qty: 2.0
+    cost_per_share: 2500.00
+    date: "2024-01-10"
+    notes: "Test crypto purchase"
+  
+  - symbol: "ADA-USD"
+    description: "Cardano"
+    qty: 1000
+    cost_per_share: 0.45
+    date: "2024-01-15"
+    notes: "Test crypto purchase"
+  
+  - symbol: "SOL-USD"
+    description: "Solana"
+    qty: 10
+    cost_per_share: 100.00
+    date: "2024-01-20"
+    notes: "Test crypto purchase"
+  
+  - symbol: "DOT-USD"
+    description: "Polkadot"
+    qty: 50
+    cost_per_share: 8.00
+    date: "2024-02-01"
+    notes: "Test crypto purchase"

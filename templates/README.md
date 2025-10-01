@@ -5,6 +5,7 @@ This folder contains example configuration files and portfolio templates to help
 ## Portfolio Templates
 
 ### stocks.yaml
+
 Example stock portfolio with major tech companies:
 - Apple (AAPL)
 - Microsoft (MSFT)
@@ -13,6 +14,7 @@ Example stock portfolio with major tech companies:
 - NVIDIA (NVDA)
 
 ### crypto.yaml
+
 Example cryptocurrency portfolio with major coins:
 - Bitcoin (BTC-USD)
 - Ethereum (ETH-USD)
@@ -22,6 +24,7 @@ Example cryptocurrency portfolio with major coins:
 - Example of manual price override for delisted assets
 
 ### etfs.yaml
+
 Example ETF portfolio for diversification:
 - VTI (Total Stock Market)
 - VXUS (International Stocks)
@@ -31,17 +34,20 @@ Example ETF portfolio for diversification:
 - SPY (S&P 500)
 
 ### rsu.yaml
+
 Example RSU (Restricted Stock Units) portfolio:
 - Company stock awards
 - Stock options that have been exercised
 - Examples of zero cost basis entries
 
 ### empty.yaml
+
 Empty portfolio template with comments showing the format.
 
 ## Configuration Template
 
 ### config.yaml
+
 Single configuration template with all essential settings:
 - Terminal width: 120 (adjustable)
 - Columnar display by default (use `-b` flag for borders)

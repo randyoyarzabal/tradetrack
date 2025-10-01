@@ -1,0 +1,41 @@
+# Test ETF Portfolio
+# This portfolio contains various ETF holdings for testing purposes
+name: "Test ETFs"
+description: "Test portfolio with diverse ETF holdings"
+currency: "USD"
+
+lots:
+  - symbol: "VTI"
+    description: "Vanguard Total Stock Market ETF"
+    qty: 25
+    cost_per_share: 220.00
+    date: "2024-01-10"
+    notes: "Test ETF purchase"
+  
+  - symbol: "VOO"
+    description: "Vanguard S&P 500 ETF"
+    qty: 15
+    cost_per_share: 400.00
+    date: "2024-01-15"
+    notes: "Test ETF purchase"
+  
+  - symbol: "QQQ"
+    description: "Invesco QQQ Trust"
+    qty: 12
+    cost_per_share: 350.00
+    date: "2024-01-20"
+    notes: "Test ETF purchase"
+  
+  - symbol: "IWM"
+    description: "iShares Russell 2000 ETF"
+    qty: 20
+    cost_per_share: 180.00
+    date: "2024-02-01"
+    notes: "Test ETF purchase"
+  
+  - symbol: "EFA"
+    description: "iShares MSCI EAFE ETF"
+    qty: 18
+    cost_per_share: 75.00
+    date: "2024-02-05"
+    notes: "Test ETF purchase"

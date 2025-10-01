@@ -1,0 +1,41 @@
+# Test Stock Portfolio
+# This portfolio contains various stock holdings for testing purposes
+name: "Test Stocks"
+description: "Test portfolio with diverse stock holdings"
+currency: "USD"
+
+lots:
+  - symbol: "AAPL"
+    description: "Apple Inc."
+    qty: 10
+    cost_per_share: 150.00
+    date: "2024-01-15"
+    notes: "Test purchase"
+  
+  - symbol: "GOOGL"
+    description: "Alphabet Inc. Class A"
+    qty: 5
+    cost_per_share: 2800.00
+    date: "2024-01-20"
+    notes: "Test purchase"
+  
+  - symbol: "MSFT"
+    description: "Microsoft Corporation"
+    qty: 8
+    cost_per_share: 300.00
+    date: "2024-02-01"
+    notes: "Test purchase"
+  
+  - symbol: "TSLA"
+    description: "Tesla, Inc."
+    qty: 3
+    cost_per_share: 200.00
+    date: "2024-02-10"
+    notes: "Test purchase"
+  
+  - symbol: "AMZN"
+    description: "Amazon.com, Inc."
+    qty: 2
+    cost_per_share: 150.00
+    date: "2024-02-15"
+    notes: "Test purchase"

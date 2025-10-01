@@ -1,0 +1,41 @@
+# Test Mixed Portfolio
+# This portfolio contains mixed asset types for testing purposes
+name: "Test Mixed"
+description: "Test portfolio with mixed asset types"
+currency: "USD"
+
+lots:
+  - symbol: "SPY"
+    description: "SPDR S&P 500 ETF Trust"
+    qty: 20
+    cost_per_share: 400.00
+    date: "2024-01-01"
+    notes: "Test mixed portfolio"
+  
+  - symbol: "NVDA"
+    description: "NVIDIA Corporation"
+    qty: 5
+    cost_per_share: 500.00
+    date: "2024-01-05"
+    notes: "Test mixed portfolio"
+  
+  - symbol: "BTC-USD"
+    description: "Bitcoin"
+    qty: 0.1
+    cost_per_share: 50000.00
+    date: "2024-01-10"
+    notes: "Test mixed portfolio"
+  
+  - symbol: "GLD"
+    description: "SPDR Gold Trust"
+    qty: 8
+    cost_per_share: 180.00
+    date: "2024-01-15"
+    notes: "Test mixed portfolio"
+  
+  - symbol: "TLT"
+    description: "iShares 20+ Year Treasury Bond ETF"
+    qty: 15
+    cost_per_share: 90.00
+    date: "2024-01-20"
+    notes: "Test mixed portfolio"

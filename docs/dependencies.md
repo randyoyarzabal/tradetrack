@@ -11,6 +11,7 @@ This document provides detailed information about TradeTrack's dependencies and 
 ## Core Dependencies
 
 ### Rich (>=14.1.0)
+
 **Purpose**: Beautiful terminal displays and tables
 - Provides bordered tables with `-b` flag
 - Handles text coloring and formatting
@@ -18,6 +19,7 @@ This document provides detailed information about TradeTrack's dependencies and 
 - **Why**: Essential for the Rich display mode and enhanced user experience
 
 ### yfinance (>=0.2.66)
+
 **Purpose**: Real-time stock and cryptocurrency data
 - Fetches live prices from Yahoo Finance
 - Handles both stocks and crypto symbols
@@ -25,6 +27,7 @@ This document provides detailed information about TradeTrack's dependencies and 
 - **Why**: Free, reliable source of financial data
 
 ### PyYAML (>=6.0)
+
 **Purpose**: Configuration and portfolio file parsing
 - Reads `config.yaml` configuration file
 - Parses portfolio YAML files
@@ -32,6 +35,7 @@ This document provides detailed information about TradeTrack's dependencies and 
 - **Why**: Human-readable configuration format
 
 ### pandas (>=2.3.0)
+
 **Purpose**: Data manipulation and analysis
 - Processes portfolio data into DataFrames
 - Handles calculations and aggregations
@@ -39,6 +43,7 @@ This document provides detailed information about TradeTrack's dependencies and 
 - **Why**: Powerful data analysis capabilities
 
 ### termcolor (>=3.1.0)
+
 **Purpose**: Terminal text coloring for columnar display
 - Colors positive/negative values
 - Highlights important information
@@ -46,6 +51,7 @@ This document provides detailed information about TradeTrack's dependencies and 
 - **Why**: Visual feedback in columnar mode
 
 ### python-dotenv (>=1.1.0)
+
 **Purpose**: Environment variable management
 - Loads configuration from `.env` files
 - Manages sensitive data like API keys
@@ -53,18 +59,21 @@ This document provides detailed information about TradeTrack's dependencies and 
 - **Why**: Secure configuration management
 
 ### requests (>=2.32.0)
+
 **Purpose**: HTTP requests (used by yfinance)
 - Handles API communication
 - Manages timeouts and retries
 - **Why**: Required by yfinance for data fetching
 
 ### numpy (>=2.3.0)
+
 **Purpose**: Numerical computing
 - Required by pandas for data operations
 - Handles mathematical calculations
 - **Why**: Core dependency of pandas
 
 ### columnar (>=1.4.0)
+
 **Purpose**: Columnar table display
 - Creates clean, borderless tables
 - Handles text wrapping and alignment
@@ -74,39 +83,49 @@ This document provides detailed information about TradeTrack's dependencies and 
 ## Installation
 
 ### Basic Installation
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Development Installation
+
 ```bash
 # Install core dependencies
+
 pip install -r requirements.txt
 
 # Install development dependencies
+
 pip install pytest black flake8 mypy
 ```
 
 ### Virtual Environment (Recommended)
+
 ```bash
 # Create virtual environment
+
 python3 -m venv .venv
 
 # Activate virtual environment
+
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
+
 pip install -r requirements.txt
 ```
 
 ## Version Compatibility
 
 ### Python Version Support
+
 - **Python 3.8**: Minimum supported version
 - **Python 3.9+**: Recommended for best performance
 - **Python 3.11+**: Latest features and optimizations
 
 ### Package Version Ranges
+
 All packages use `>=` version constraints to ensure compatibility:
 - Allows patch and minor version updates
 - Prevents breaking changes from major version updates
@@ -115,21 +134,27 @@ All packages use `>=` version constraints to ensure compatibility:
 ## Optional Dependencies
 
 ### Development Tools
+
 ```bash
 # Testing
+
 pytest>=7.0.0
 
 # Code formatting
+
 black>=23.0.0
 
 # Linting
+
 flake8>=6.0.0
 
 # Type checking
+
 mypy>=1.0.0
 ```
 
 ### Enhanced Functionality
+
 - **matplotlib**: For future charting features
 - **plotly**: For interactive visualizations
 - **jupyter**: For notebook-based analysis
@@ -160,16 +185,19 @@ mypy>=1.0.0
 ### Platform-Specific Issues
 
 #### Windows
+
 - Use Windows Terminal or PowerShell for best experience
 - PuTTY works but may have limited Unicode support
 - Consider using WSL for Linux-like experience
 
 #### macOS
+
 - Terminal.app works well
 - iTerm2 provides enhanced features
 - Homebrew Python recommended
 
 #### Linux
+
 - Most terminals work well
 - Ensure UTF-8 locale is set
 - Install system dependencies if needed
@@ -177,16 +205,19 @@ mypy>=1.0.0
 ## Security Considerations
 
 ### API Keys
+
 - Never commit API keys to version control
 - Use environment variables for sensitive data
 - Consider using `.env` files (excluded from git)
 
 ### Data Privacy
+
 - Portfolio data is stored locally
 - No data is sent to external servers (except Yahoo Finance)
 - Cache files contain only public market data
 
 ### Package Security
+
 - Regularly update dependencies: `pip install --upgrade -r requirements.txt`
 - Use `pip-audit` to check for vulnerabilities
 - Consider using `pip-tools` for dependency management
@@ -194,16 +225,19 @@ mypy>=1.0.0
 ## Performance Considerations
 
 ### Memory Usage
+
 - pandas DataFrames are memory-efficient
 - Large portfolios may require more RAM
 - Consider chunking for very large datasets
 
 ### Network Usage
+
 - yfinance caches data locally
 - Live data fetches are minimal
 - Offline mode available with cached data
 
 ### CPU Usage
+
 - Calculations are optimized with pandas/numpy
 - Rich rendering is efficient
 - Consider terminal size for large tables
@@ -211,21 +245,25 @@ mypy>=1.0.0
 ## Updating Dependencies
 
 ### Check for Updates
+
 ```bash
 pip list --outdated
 ```
 
 ### Update All Dependencies
+
 ```bash
 pip install --upgrade -r requirements.txt
 ```
 
 ### Update Specific Package
+
 ```bash
 pip install --upgrade package_name
 ```
 
 ### Pin Versions (Production)
+
 For production deployments, consider pinning exact versions:
 ```txt
 rich==14.1.0

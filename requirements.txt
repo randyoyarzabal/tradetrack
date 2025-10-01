@@ -28,10 +28,3 @@ numpy>=2.3.0
 
 # Columnar table display for non-Rich mode
 columnar>=1.4.0
-
-# Development Dependencies (optional)
-# Uncomment these for development work:
-# pytest>=7.0.0          # Testing framework
-# black>=23.0.0           # Code formatting
-# flake8>=6.0.0           # Linting
-# mypy>=1.0.0             # Type checking
