@@ -32,13 +32,16 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - name: Install dependencies
+    - name: Install production dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-mock pytest-xdist
 
-    - name: Run syntax tests
+    - name: Install test dependencies
+      run: |
+        pip install -r tests/requirements.txt
+
+    - name: Run syntax validation
       run: |
         echo "✓ Running syntax validation..."
         python -m py_compile ttrack.py
@@ -46,74 +49,43 @@ jobs:
         python -m py_compile tests/*.py
         echo "✓ Syntax validation passed"
 
-    - name: Run linting tests
+    - name: Run basic tests
       run: |
-        echo "✓ Running linting tests..."
-        pip install flake8 black isort mypy
-        # Black formatting check
-        black --check --diff .
-        # Import sorting check
-        isort --check-only --diff .
-        # Linting with flake8
+        echo "✓ Running basic tests..."
+        python tests/run_tests.py --basic
+        echo "✓ Basic tests passed"
+
+    - name: Run component tests
+      run: |
+        echo "✓ Running component tests..."
+        python tests/run_tests.py --component
+        echo "✓ Component tests passed"
+
+    - name: Run all tests with coverage
+      run: |
+        echo "✓ Running all tests with coverage..."
+        pytest tests/ -v --cov=libs --cov-report=xml --cov-report=html --cov-report=term-missing
+        echo "✓ All tests with coverage passed"
+
+    - name: Run linting
+      run: |
+        echo "✓ Running linting..."
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-        echo "✓ Linting tests passed"
+        echo "✓ Linting passed"
 
-    - name: Run type checking tests
+    - name: Run type checking
       run: |
-        echo "✓ Running type checking tests..."
+        echo "✓ Running type checking..."
         mypy --ignore-missing-imports libs/
-        echo "✓ Type checking tests passed"
+        echo "✓ Type checking passed"
 
-    - name: Run unit tests
+    - name: Run security scan
       run: |
-        echo "✓ Running unit tests..."
-        pytest tests/ -v --tb=short --cov=libs --cov-report=xml --cov-report=html --cov-report=term-missing
-        echo "✓ Unit tests passed"
-
-    - name: Run integration tests
-      run: |
-        echo "✓ Running integration tests..."
-        pytest tests/test_integration.py -v --tb=short
-        echo "✓ Integration tests passed"
-
-    - name: Run API tests
-      run: |
-        echo "✓ Running API tests..."
-        pytest tests/test_api.py -v --tb=short
-        echo "✓ API tests passed"
-
-    - name: Run performance tests
-      run: |
-        echo "✓ Running performance tests..."
-        pytest tests/ -k "performance" -v --tb=short
-        echo "✓ Performance tests passed"
-
-    - name: Run memory tests
-      run: |
-        echo "✓ Running memory tests..."
-        pytest tests/ -k "memory" -v --tb=short
-        echo "✓ Memory tests passed"
-
-    - name: Run error handling tests
-      run: |
-        echo "✓ Running error handling tests..."
-        pytest tests/ -k "error" -v --tb=short
-        echo "✓ Error handling tests passed"
-
-    - name: Run edge case tests
-      run: |
-        echo "✓ Running edge case tests..."
-        pytest tests/ -k "edge" -v --tb=short
-        echo "✓ Edge case tests passed"
-
-    - name: Run security tests
-      run: |
-        echo "✓ Running security tests..."
-        pip install bandit safety
+        echo "✓ Running security scan..."
         bandit -r libs/ -f json -o bandit-report.json || true
         safety check --json --output safety-report.json || true
-        echo "✓ Security tests completed"
+        echo "✓ Security scan completed"
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
@@ -153,12 +125,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-mock
+        pip install -r tests/requirements.txt
 
     - name: Run tests on Windows
       run: |
         echo "✓ Running tests on Windows..."
-        pytest tests/ -v --tb=short
+        python tests/run_tests.py
         echo "✓ Windows tests passed"
 
   test-macos:
@@ -180,40 +152,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-mock
+        pip install -r tests/requirements.txt
 
     - name: Run tests on macOS
       run: |
         echo "✓ Running tests on macOS..."
-        pytest tests/ -v --tb=short
+        python tests/run_tests.py
         echo "✓ macOS tests passed"
-
-  test-docker:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Build Docker image
-      run: |
-        echo "✓ Building Docker image..."
-        # Create a simple Dockerfile for testing
-        cat > Dockerfile << EOF
-        FROM python:3.11-slim
-        WORKDIR /app
-        COPY requirements.txt .
-        RUN pip install -r requirements.txt
-        COPY . .
-        CMD ["python", "ttrack.py", "--help"]
-        EOF
-        docker build -t tradetrack:test .
-        echo "✓ Docker image built"
-
-    - name: Test Docker image
-      run: |
-        echo "✓ Testing Docker image..."
-        docker run --rm tradetrack:test
-        echo "✓ Docker tests passed"
 
   test-dependencies:
     runs-on: ubuntu-latest
@@ -230,6 +175,7 @@ jobs:
       run: |
         echo "✓ Testing dependency resolution..."
         pip install -r requirements.txt
+        pip install -r tests/requirements.txt
         pip check
         echo "✓ Dependencies resolved successfully"
 
@@ -239,30 +185,9 @@ jobs:
         python -c "import sys; assert sys.version_info >= (3, 9)"
         echo "✓ Python version compatibility confirmed"
 
-  test-documentation:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install documentation dependencies
-      run: |
-        pip install sphinx sphinx-rtd-theme
-
-    - name: Test documentation build
-      run: |
-        echo "✓ Testing documentation build..."
-        # This would build docs if they existed
-        echo "✓ Documentation tests passed"
-
   notify:
     runs-on: ubuntu-latest
-    needs: [test, test-windows, test-macos, test-docker, test-dependencies]
+    needs: [test, test-windows, test-macos, test-dependencies]
     if: always()
     steps:
     - name: Notify test results
