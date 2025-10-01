@@ -468,6 +468,156 @@ class PortfolioLibrary:
         # Show cache message if applicable
         self._show_cache_status_message()
 
+    def display_all_portfolios_grouped(self):
+        """Display all portfolios grouped by portfolio with portfolio totals."""
+        if self.df is None or self.df.empty:
+            print("No portfolio data available")
+            return
+
+        # Group data by portfolio
+        grouped_data = self.df.groupby('Portfolio')
+
+        # Headers without Portfolio column for grouped display
+        grouped_headers = ['Symbol', 'Description', 'Qty',
+                           'Ave$', 'Price', 'Gain%', 'Cost', 'Gain$', 'Value']
+
+        # Calculate overall totals
+        total_cost = self.df['Cost'].sum()
+        total_gain = self.df['Gain$'].sum()
+        total_value = self.df['Value'].sum()
+        overall_gain_pct = (total_gain / total_cost *
+                            100) if total_cost > 0 else 0
+
+        # Display each portfolio group
+        for portfolio_name, portfolio_df in grouped_data:
+            # Apply sorting within each portfolio
+            sorted_portfolio_data = self._apply_sorting(portfolio_df)
+
+            # Convert to display format (without Portfolio column)
+            display_data = self._format_display_data_grouped(
+                sorted_portfolio_data)
+
+            # Calculate portfolio totals
+            portfolio_cost = portfolio_df['Cost'].sum()
+            portfolio_gain = portfolio_df['Gain$'].sum()
+            portfolio_value = portfolio_df['Value'].sum()
+            portfolio_gain_pct = (
+                portfolio_gain / portfolio_cost * 100) if portfolio_cost > 0 else 0
+
+            # Create portfolio summary with proper color formatting
+            if self.borders:
+                # Rich mode - use Rich markup
+                portfolio_summary = f"Portfolio: {portfolio_name.upper()} (All-Time {self._format_gain_percentage(portfolio_gain_pct, use_rich=True)})"
+            else:
+                # Columnar mode - use termcolor for proper color rendering
+                from termcolor import colored
+                gain_text = self._format_gain_percentage(
+                    portfolio_gain_pct, use_rich=False)
+                if portfolio_gain_pct >= 0:
+                    gain_colored = colored(
+                        gain_text, 'green', force_color=True)
+                else:
+                    gain_colored = colored(gain_text, 'red', force_color=True)
+                portfolio_summary = f"Portfolio: {portfolio_name.upper()} (All-Time {gain_colored})"
+
+            # Display the portfolio table
+            if self.borders:
+                # Use Rich table with borders
+                self.rich_display.display_table(
+                    headers=grouped_headers,
+                    data=display_data,
+                    bordered=True,
+                    title=portfolio_summary
+                )
+            else:
+                # Use columnar table without borders
+                if self.show_totals:
+                    # Add portfolio totals row
+                    totals_row = self._create_portfolio_totals_row(
+                        portfolio_df)
+                    display_data.append(totals_row)
+
+                self.rich_display.display_columnar_table(
+                    headers=grouped_headers,
+                    data=display_data,
+                    title=portfolio_summary
+                )
+
+            print()  # Add spacing between portfolios
+
+        # Display overall summary
+        if self.show_totals:
+            if self.borders:
+                # Rich mode - use Rich markup
+                overall_summary = f"TOTAL: {self.currency_formatter.format_currency(total_value)} ({self._format_gain_percentage(overall_gain_pct, use_rich=True)})"
+            else:
+                # Columnar mode - use termcolor for proper color rendering
+                from termcolor import colored
+                gain_text = self._format_gain_percentage(
+                    overall_gain_pct, use_rich=False)
+                if overall_gain_pct >= 0:
+                    gain_colored = colored(
+                        gain_text, 'green', force_color=True)
+                else:
+                    gain_colored = colored(gain_text, 'red', force_color=True)
+                overall_summary = f"TOTAL: {self.currency_formatter.format_currency(total_value)} ({gain_colored})"
+            print(f"{overall_summary:^80}")
+
+        # Show cache message if applicable
+        self._show_cache_status_message()
+
+    def _format_display_data_grouped(self, df):
+        """Format data for grouped display (without Portfolio column)."""
+        display_data = []
+
+        for _, row in df.iterrows():
+            # Format each row without the Portfolio column - pass raw values for Rich coloring
+            formatted_row = [
+                row['Symbol'],
+                row['Description'],
+                row['Qty'],
+                row['Ave$'],  # Pass raw value for Rich coloring
+                row['Price'],
+                row['Gain%'],  # Pass raw value for Rich coloring
+                row['Cost'],
+                row['Gain$'],  # Pass raw value for Rich coloring
+                row['Value']
+            ]
+            display_data.append(formatted_row)
+
+        return display_data
+
+    def _create_portfolio_totals_row(self, portfolio_df):
+        """Create totals row for a single portfolio."""
+        total_cost = portfolio_df['Cost'].sum()
+        total_gain = portfolio_df['Gain$'].sum()
+        total_value = portfolio_df['Value'].sum()
+
+        return [
+            '',  # Symbol
+            '',  # Description
+            '',  # Qty
+            '',  # Ave$
+            '',  # Price
+            '',  # Gain%
+            self.currency_formatter.format_currency(total_cost),
+            self.currency_formatter.format_currency(total_gain),
+            self.currency_formatter.format_currency(total_value)
+        ]
+
+    def _format_gain_percentage(self, gain_pct, use_rich=False):
+        """Format gain percentage with color coding."""
+        if gain_pct >= 0:
+            if use_rich:
+                return f"[green]+{gain_pct:.1f}%[/green]"
+            else:
+                return f"+{gain_pct:.1f}%"
+        else:
+            if use_rich:
+                return f"[red]{gain_pct:.1f}%[/red]"
+            else:
+                return f"{gain_pct:.1f}%"
+
     def display_statistics(self):
         """Display portfolio statistics."""
         if not self.stats:

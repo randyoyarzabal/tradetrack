@@ -813,6 +813,119 @@ class PortfolioCRUD:
         except Exception as e:
             print(f"Error in tax analysis: {e}")
 
+    def get_tax_analysis_all_portfolios(self) -> None:
+        """
+        Get tax analysis for all portfolios.
+        """
+        try:
+            # Get all portfolio files
+            portfolio_files = list(self.portfolios_dir.glob("*.yaml"))
+            if not portfolio_files:
+                print("No portfolios found")
+                return
+
+            print(
+                f"\n{colored('Tax Analysis for ALL Portfolios', 'cyan', attrs=['bold'])}:")
+            print(colored("=" * 80, 'cyan'))
+
+            # Fetch current prices for all symbols across all portfolios
+            from libs.yahoo_quotes import get_yahoo_quotes
+            yahoo_quotes = get_yahoo_quotes()
+
+            all_symbols = set()
+            portfolio_data = {}
+
+            # First pass: collect all symbols and portfolio data
+            for portfolio_file in sorted(portfolio_files):
+                portfolio_name = portfolio_file.stem.upper()
+
+                with open(portfolio_file, 'r') as f:
+                    data = yaml.safe_load(f)
+
+                stocks = data.get('stocks', {})
+                if stocks:
+                    portfolio_data[portfolio_name] = stocks
+                    all_symbols.update(stocks.keys())
+
+            if not all_symbols:
+                print("No stocks found in any portfolio")
+                return
+
+            # Fetch current prices for all symbols
+            current_prices = yahoo_quotes.get_quotes(list(all_symbols))
+
+            # Process each portfolio
+            for portfolio_name in sorted(portfolio_data.keys()):
+                stocks = portfolio_data[portfolio_name]
+
+                print(
+                    f"\n{colored('Portfolio:', 'yellow', attrs=['bold'])} {colored(portfolio_name, 'white', attrs=['bold'])}")
+                print(colored("-" * 40, 'yellow'))
+
+                for sym, stock_data in stocks.items():
+                    lots = stock_data.get('lots', [])
+                    if not lots:
+                        continue
+
+                    current_price = current_prices.get(
+                        sym, {}).get('current_price')
+                    if current_price is None:
+                        print(
+                            f"  {colored(sym, 'red')}: No current price available")
+                        continue
+
+                    print(
+                        f"\n  {colored(sym, 'cyan', attrs=['bold'])} - {colored(f'${current_price:.2f}', 'green')}")
+
+                    total_shares = 0
+                    total_cost = 0
+                    total_value = 0
+                    total_gain = 0
+
+                    for i, lot in enumerate(lots):
+                        shares = lot['shares']
+                        cost_basis = lot['cost_basis']
+                        lot_cost = shares * cost_basis
+                        lot_value = shares * current_price
+                        lot_gain = lot_value - lot_cost
+                        lot_gain_pct = (lot_gain / lot_cost *
+                                        100) if lot_cost > 0 else 0
+
+                        # Calculate holding period
+                        purchase_date = datetime.strptime(
+                            lot['date'], '%Y-%m-%d')
+                        days_held = (datetime.now() - purchase_date).days
+                        years_held = days_held / 365.25
+                        is_long_term = years_held >= 1.0
+
+                        # Color coding for gains/losses
+                        gain_color = 'green' if lot_gain >= 0 else 'red'
+                        term_color = 'green' if is_long_term else 'yellow'
+
+                        print(f"    Lot {i+1}: {shares:.2f} shares @ ${cost_basis:.2f} "
+                              f"({colored(f'{years_held:.1f}y', term_color)}) "
+                              f"= {colored(f'${lot_gain:+.2f}', gain_color)} "
+                              f"({colored(f'{lot_gain_pct:+.1f}%', gain_color)})")
+
+                        total_shares += shares
+                        total_cost += lot_cost
+                        total_value += lot_value
+                        total_gain += lot_gain
+
+                    # Portfolio totals for this symbol
+                    if total_shares > 0:
+                        total_gain_pct = (
+                            total_gain / total_cost * 100) if total_cost > 0 else 0
+                        gain_color = 'green' if total_gain >= 0 else 'red'
+
+                        print(f"    {colored('TOTAL:', 'white', attrs=['bold'])} {total_shares:.2f} shares "
+                              f"@ ${total_cost/total_shares:.2f} avg = "
+                              f"{colored(f'${total_gain:+.2f}', gain_color)} "
+                              f"({colored(f'{total_gain_pct:+.1f}%', gain_color)})")
+
+        except Exception as e:
+            print(f"Error getting tax analysis for all portfolios: {e}")
+
     def get_tax_harvesting_opportunities(self, borders: bool = False) -> None:
         """
         Get tax harvesting opportunities across all portfolios.
@@ -989,7 +1102,12 @@ def _display_all_portfolios(pl, args, config_loader):
     # Otherwise, respect the config setting
     if args.terminal_width != config_loader.get_terminal_width():
         pl.terminal_width = args.terminal_width
-    pl.display_all_portfolios()
+
+    # Check if grouped display is requested
+    if hasattr(args, 'grouped') and args.grouped:
+        pl.display_all_portfolios_grouped()
+    else:
+        pl.display_all_portfolios()
 
 
 def main():
@@ -1016,6 +1134,7 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
     {0} -p crypto                    # Display crypto portfolio
     {0} -p crypto -p stocks -b       # Multiple portfolios with borders
     {0} --all -b                     # All portfolios with Rich tables
+    {0} --all --grouped              # All portfolios grouped by portfolio with totals
     {0} --all -ic                    # All portfolios including crypto
     {0} --stats                      # Portfolio statistics
     {0} --list                       # List available portfolios
@@ -1044,8 +1163,10 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
     {0} --restore-portfolio backups/crypto_20241201_120000.yaml restored_crypto
 
   Analysis & Export:
-    {0} --tax-analysis crypto all        # Tax analysis for all symbols
+    {0} --tax-analysis all all          # Tax analysis for all portfolios
+    {0} --tax-analysis crypto all       # Tax analysis for all symbols in portfolio
     {0} --tax-analysis robinhood AAPL   # Tax analysis for specific symbol
+    {0} --tax-harvesting                # Tax harvesting opportunities (long-term holdings)
     {0} --all -c portfolio_export.csv   # Export to CSV
     {0} --all --live                    # Force live data fetch
 
@@ -1089,6 +1210,8 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
                            action='append', nargs='+', type=lambda s: s.upper())
     portfolio.add_argument('--all', action='store_true',
                            default=False, help='Display all portfolios combined.')
+    portfolio.add_argument('--grouped', action='store_true',
+                           default=False, help='Group portfolios by portfolio name with totals (use with --all).')
     portfolio.add_argument('--list', action='store_true',
                            default=False, help='List available portfolios.')
     portfolio.add_argument('-s', '--stats', action='store_true',
@@ -1356,9 +1479,14 @@ Modern portfolio tracker with YAML configuration, Yahoo Finance API, and Rich di
             crud = PortfolioCRUD()
 
             portfolio, symbol = args.tax_analysis
-            if symbol.lower() == 'all':
-                symbol = None
-            crud.get_tax_analysis(portfolio, symbol)
+
+            # Check if user wants tax analysis for all portfolios
+            if portfolio.lower() == 'all':
+                crud.get_tax_analysis_all_portfolios()
+            else:
+                if symbol.lower() == 'all':
+                    symbol = None
+                crud.get_tax_analysis(portfolio, symbol)
             sys.exit(0)
 
         if args.tax_harvesting:
