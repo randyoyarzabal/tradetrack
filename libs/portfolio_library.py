@@ -70,7 +70,9 @@ class PortfolioLibrary:
         filtered_stocks = self._filter_stocks()
 
         # Get quotes for all symbols, but exclude those with manual prices
-        all_symbols = list(filtered_stocks.keys())
+        # Extract actual symbols from the composite keys
+        all_symbols = [stock_data['symbol']
+                       for stock_data in filtered_stocks.values()]
         manual_price_symbols = self._get_symbols_with_manual_prices(
             filtered_stocks)
         symbols_to_fetch = [
@@ -184,7 +186,7 @@ class PortfolioLibrary:
         for portfolio_symbol, stock_data in self.all_stocks.items():
             # Extract the actual symbol from the portfolio_symbol key
             symbol = stock_data['symbol']
-            
+
             # Check crypto inclusion
             if not self.include_crypto and self.yahoo_quotes.is_crypto(symbol):
                 continue
@@ -215,7 +217,7 @@ class PortfolioLibrary:
         for portfolio_symbol, stock_data in stocks.items():
             # Extract the actual symbol from the portfolio_symbol key
             symbol = stock_data['symbol']
-            
+
             # Check if we have quote data, if not, try to use manual prices
             if symbol not in self.quotes:
                 # Try to use manual price as fallback
