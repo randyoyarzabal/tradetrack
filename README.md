@@ -8,7 +8,7 @@
 
 TradeTrack is a feature-rich command-line tool for tracking and analyzing your stock and cryptocurrency portfolios. Built with Python and the Rich library, it offers real-time data from Yahoo Finance, beautiful table displays, and comprehensive portfolio management.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -87,7 +87,7 @@ TradeTrack is a feature-rich command-line tool for tracking and analyzing your s
 
 > **Need help?** Check the [Configuration Guide](docs/configuration.md) or [Troubleshooting](docs/troubleshooting.md)
 
-## 📊 Key Features
+## Key Features
 
 - **Real-time Data** - Live stock and crypto prices via Yahoo Finance
 - **Beautiful Displays** - Rich tables with borders or clean columnar layout  
