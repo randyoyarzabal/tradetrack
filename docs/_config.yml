@@ -1,0 +1,43 @@
+# GitHub Pages Configuration for TradeTrack
+# Theme: Dinky (GitHub supported theme)
+
+title: TradeTrack Documentation
+description: A modern CLI stock portfolio tracker with real-time data and beautiful displays
+url: https://randyoyarzabal.github.io
+baseurl: /tradetrack
+
+# Theme configuration
+theme: jekyll-theme-dinky
+
+# Site settings
+logo: /tradetrack/assets/images/logo.png
+favicon: /tradetrack/assets/images/favicon.ico
+
+# Navigation
+nav_external_links:
+  - title: GitHub Repository
+    url: https://github.com/randyoyarzabal/tradetrack
+
+# Footer
+footer_content: "TradeTrack - Track your investments with confidence"
+
+# Aux links for the upper right navigation
+aux_links:
+  "GitHub Repository":
+    - "//github.com/randyoyarzabal/tradetrack"
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
