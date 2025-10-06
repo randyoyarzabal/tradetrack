@@ -2,6 +2,15 @@
 
 This guide covers all configuration options available in TradeTrack.
 
+## Table of Contents
+
+- [Main Configuration File](#main-configuration-file)
+- [Configuration Sections](#configuration-sections)
+- [Portfolio Configuration](#portfolio-configuration)
+- [Environment Variables](#environment-variables)
+- [Command Line Options](#command-line-options)
+- [Advanced Configuration](#advanced-configuration)
+
 ## Main Configuration File
 
 The main configuration is stored in `conf/config.yaml`. This file controls all aspects of the application behavior.

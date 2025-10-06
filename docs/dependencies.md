@@ -2,6 +2,15 @@
 
 This document provides detailed information about TradeTrack's dependencies and requirements.
 
+## Table of Contents
+
+- [System Requirements](#system-requirements)
+- [Core Dependencies](#core-dependencies)
+- [Optional Dependencies](#optional-dependencies)
+- [Installation Methods](#installation-methods)
+- [Virtual Environment Setup](#virtual-environment-setup)
+- [Troubleshooting Installation](#troubleshooting-installation)
+
 ## System Requirements
 
 - **Python**: 3.8 or higher

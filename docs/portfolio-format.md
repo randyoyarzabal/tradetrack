@@ -2,6 +2,15 @@
 
 This guide explains the YAML format used for TradeTrack portfolios and provides examples for different types of investments.
 
+## Table of Contents
+
+- [Basic Portfolio Structure](#basic-portfolio-structure)
+- [Field Descriptions](#field-descriptions)
+- [Portfolio Examples](#portfolio-examples)
+- [Advanced Features](#advanced-features)
+- [Validation Rules](#validation-rules)
+- [Best Practices](#best-practices)
+
 ## Basic Portfolio Structure
 
 A TradeTrack portfolio is a YAML file with the following structure:
