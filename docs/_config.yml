@@ -7,8 +7,8 @@ url: https://randyoyarzabal.github.io
 baseurl: /tradetrack
 
 # Site settings
-logo: /tradetrack/assets/images/logo.png
-favicon: /tradetrack/assets/images/favicon.ico
+# logo: /tradetrack/assets/images/logo.png
+# favicon: /tradetrack/assets/images/favicon.ico
 
 # Navigation
 nav_external_links:
