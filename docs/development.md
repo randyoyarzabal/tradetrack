@@ -2,6 +2,15 @@
 
 This document provides comprehensive information for developers working on TradeTrack.
 
+## Table of Contents
+
+- [Getting Started for Developers](#getting-started-for-developers)
+- [Project Structure](#project-structure)
+- [Code Style and Standards](#code-style-and-standards)
+- [Testing](#testing)
+- [Building and Distribution](#building-and-distribution)
+- [Contributing Guidelines](#contributing-guidelines)
+
 ## Getting Started for Developers
 
 ### Prerequisites

@@ -2,6 +2,15 @@
 
 This guide covers advanced features and techniques for power users of TradeTrack.
 
+## Table of Contents
+
+- [Advanced Display Options](#advanced-display-options)
+- [Automation and Scripting](#automation-and-scripting)
+- [Custom Price Sources](#custom-price-sources)
+- [Performance Optimization](#performance-optimization)
+- [Integration Examples](#integration-examples)
+- [Troubleshooting Advanced Features](#troubleshooting-advanced-features)
+
 ## Advanced Display Options
 
 ### Custom Terminal Width

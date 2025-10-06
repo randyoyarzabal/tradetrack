@@ -7,6 +7,7 @@ Track and analyze your stock and cryptocurrency portfolios with real-time data f
 ## Quick Start (3 Steps)
 
 ### 1. Clone & Setup
+
 ```bash
 git clone https://github.com/randyoyarzabal/tradetrack.git
 cd tradetrack
@@ -17,11 +18,13 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 3. Start Tracking
+
 ```bash
 # Create your first portfolio
 python ttrack.py create my-portfolio
@@ -49,6 +52,7 @@ python ttrack.py view my-portfolio
 ## Production Setup
 
 ### Portfolio Management
+
 ```bash
 # Create portfolio
 python ttrack.py --create-portfolio my_stocks "My Stock Portfolio"
@@ -62,6 +66,7 @@ python ttrack.py -p my_stocks -b  # Beautiful bordered view
 ```
 
 ### Advanced Operations
+
 ```bash
 # View all portfolios
 python ttrack.py --all
@@ -112,7 +117,8 @@ python ttrack.py -p|--all|--stats|--export
 
 ### Common Issues
 
-**"pip externally managed" Error**
+### "pip externally managed" Error
+
 ```bash
 # Solution: Use virtual environment
 python3 -m venv .venv
@@ -120,13 +126,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**No data from Yahoo Finance**
+### No data from Yahoo Finance
+
 ```bash
 # Check internet connection and try again
 # Some symbols may be delisted or unavailable
 ```
 
-**Portfolio not found**
+### Portfolio not found
+
 ```bash
 # List all portfolios
 python ttrack.py --list

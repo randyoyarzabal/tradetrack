@@ -2,6 +2,14 @@
 
 This guide helps you resolve common issues when using TradeTrack.
 
+## Table of Contents
+
+- [Common Issues](#common-issues)
+- [Data and API Issues](#data-and-api-issues)
+- [Performance Issues](#performance-issues)
+- [Configuration Issues](#configuration-issues)
+- [Getting Additional Help](#getting-additional-help)
+
 ## Common Issues
 
 ### Installation Problems
