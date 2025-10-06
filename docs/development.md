@@ -2,7 +2,7 @@
 
 This document provides comprehensive information for developers working on TradeTrack.
 
-## 🚀 Getting Started for Developers
+## Getting Started for Developers
 
 ### Prerequisites
 
@@ -186,7 +186,7 @@ def test_config_loader_init_default(self):
 - Test both success and error cases
 - Include edge cases and boundary conditions
 
-## 🔧 Development Tools
+## Development Tools
 
 ### Code Quality
 

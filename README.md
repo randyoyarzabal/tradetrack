@@ -76,7 +76,7 @@ TradeTrack is a feature-rich command-line tool for tracking and analyzing your s
    python ttrack.py -p my_stocks -b
    ```
 
-**That's it!** You now have a working portfolio tracker. 🎉
+**That's it!** You now have a working portfolio tracker.
 
 ### Next Steps
 

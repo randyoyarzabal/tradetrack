@@ -7,17 +7,21 @@ This guide helps you resolve common issues when using TradeTrack.
 ### Installation Problems
 
 #### Python Not Found
+
 **Error**: `python: command not found` or `python3: command not found`
 
 **Solution**:
+
 - **Windows**: Download Python from [python.org](https://www.python.org/downloads/) and ensure "Add Python to PATH" is checked
 - **macOS**: Install via Homebrew: `brew install python3`
 - **Linux**: Install via package manager: `sudo apt install python3` (Ubuntu/Debian) or `sudo yum install python3` (RHEL/CentOS)
 
 #### Virtual Environment Issues
+
 **Error**: `venv: command not found`
 
 **Solution**:
+
 ```bash
 # Ensure you're using the correct Python command for your OS
 python -m venv .venv    # Windows
