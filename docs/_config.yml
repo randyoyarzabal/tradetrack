@@ -6,9 +6,6 @@ description: A modern CLI stock portfolio tracker with real-time data and beauti
 url: https://randyoyarzabal.github.io
 baseurl: /tradetrack
 
-# Theme configuration
-theme: jekyll-theme-dinky
-
 # Site settings
 logo: /tradetrack/assets/images/logo.png
 favicon: /tradetrack/assets/images/favicon.ico
@@ -26,8 +23,11 @@ aux_links:
   "GitHub Repository":
     - "//github.com/randyoyarzabal/tradetrack"
 
+remote_theme: pages-themes/slate@v0.2.0
+
 # Plugins
 plugins:
+  - jekyll-remote-theme # add this line to the plugins list if you already have one
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
