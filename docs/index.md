@@ -1,4 +1,4 @@
-# TradeTrack Documentation
+# TradeTrack
 
 Welcome to the complete TradeTrack documentation. This guide covers everything you need to know to effectively use TradeTrack for portfolio management and analysis.
 

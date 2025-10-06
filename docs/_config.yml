@@ -1,7 +1,7 @@
 # GitHub Pages Configuration for TradeTrack
 # Theme: Dinky (GitHub supported theme)
 
-title: TradeTrack Documentation
+title: TradeTrack
 description: A modern CLI stock portfolio tracker with real-time data and beautiful displays
 url: https://randyoyarzabal.github.io
 baseurl: /tradetrack
